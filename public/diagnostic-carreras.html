@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Diagnostic: Carreras Select</title>
+    <style>
+        body { font-family: monospace; padding: 20px; }
+        .test { margin: 20px 0; padding: 10px; border: 1px solid #ccc; }
+        .pass { background: #efe; }
+        .fail { background: #fee; }
+        pre { background: #f5f5f5; padding: 10px; overflow: auto; }
+    </style>
+</head>
+<body>
+    <h1>Diagnóstico: Carga de Carreras</h1>
+    
+    <div class="test">
+        <h3>Test 1: Conectividad API</h3>
+        <div id="test1"></div>
+    </div>
+    
+    <div class="test">
+        <h3>Test 2: Página planestudio</h3>
+        <div id="test2"></div>
+    </div>
+    
+    <div class="test">
+        <h3>Test 3: Validación de sintaxis</h3>
+        <div id="test3"></div>
+    </div>
+    
+    <script>
+        async function runTests() {
+            // Test 1
+            const test1 = document.getElementById('test1');
+            try {
+                const res = await fetch('/api/carreras');
+                const data = await res.json();
+                test1.innerHTML = '<span class="pass">✓ API funciona</span><pre>' + JSON.stringify(data.slice(0, 2), null, 2) + '</pre>';
+            } catch (e) {
+                test1.innerHTML = '<span class="fail">✗ Error: ' + e.message + '</span>';
+            }
+            
+            // Test 2
+            const test2 = document.getElementById('test2');
+            try {
+                const res = await fetch('/planestudio');
+                const html = await res.text();
+                const hasSelect = html.includes('id="carrera"');
+                const hasFetch = html.includes("fetch('/api/carreras')");
+                const hasDOMReady = html.includes('DOMContentLoaded');
+                
+                let result = '<div class="pass">';
+                result += '<p>✓ Select presente: ' + hasSelect + '</p>';
+                result += '<p>✓ Fetch presente: ' + hasFetch + '</p>';
+                result += '<p>✓ DOMContentLoaded presente: ' + hasDOMReady + '</p>';
+                result += '</div>';
+                
+                test2.innerHTML = result;
+            } catch (e) {
+                test2.innerHTML = '<span class="fail">✗ Error: ' + e.message + '</span>';
+            }
+            
+            // Test 3: Verificar sintaxis JS
+            const test3 = document.getElementById('test3');
+            try {
+                // Intentar compilar un small snippet
+                new Function("document.addEventListener('DOMContentLoaded', async function() { const x = 1; });");
+                test3.innerHTML = '<span class="pass">✓ Sintaxis JavaScript válida</span>';
+            } catch (e) {
+                test3.innerHTML = '<span class="fail">✗ Error de sintaxis: ' + e.message + '</span>';
+            }
+        }
+        
+        window.onload = runTests;
+    </script>
+</body>
+</html>

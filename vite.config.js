@@ -1,21 +1,4 @@
-import {
-    defineConfig
-} from 'vite';
-import laravel from 'laravel-vite-plugin';
-import tailwindcss from "@tailwindcss/vite";
-
-export default defineConfig({
-    plugins: [
-        laravel({
-            input: ['resources/css/app.css', 'resources/js/app.js'],
-            refresh: true,
-        }),
-        tailwindcss(),
-    ],
-    server: {
-        cors: true,
-        watch: {
-            ignored: ['**/storage/framework/views/**'],
-        },
-    },
-});
+// Vite no se utiliza en este proyecto
+// Todo el CSS se carga desde CDN (Tailwind CSS)
+// Todo el JavaScript se carga desde CDN (Alpine.js, etc.)
+export default {};

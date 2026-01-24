@@ -1,18 +1,63 @@
-<x-layouts.app :title="__('Dashboard')">
-    <div class="flex h-full w-full flex-1 flex-col gap-4 rounded-xl">
-        <div class="grid auto-rows-min gap-4 md:grid-cols-3">
-            <div class="relative aspect-video overflow-hidden rounded-xl border border-neutral-200 dark:border-neutral-700">
-                <x-placeholder-pattern class="absolute inset-0 size-full stroke-gray-900/20 dark:stroke-neutral-100/20" />
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard | Agenda Semestral</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="min-h-screen bg-white">
+
+    <!-- Navbar -->
+    <nav class="bg-gray-100 border-b border-orange-500 p-4">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+
+            <!-- Secciones del navbar -->
+            <div class="flex space-x-6">
+                <a href="{{ route('indicadores') }}" class="text-gray-600 hover:text-orange-500 font-semibold">Indicadores</a>
+                <a href="{{ route('planestudio') }}" class="text-gray-600 hover:text-orange-500 font-semibold">Plan de Estudio</a>
+                <a href="{{ route('roles') }}" class="text-gray-600 hover:text-orange-500 font-semibold">Gestión de Roles</a>
+                <a href="#" class="text-gray-600 hover:text-orange-500 font-semibold">Acerca de</a>
             </div>
-            <div class="relative aspect-video overflow-hidden rounded-xl border border-neutral-200 dark:border-neutral-700">
-                <x-placeholder-pattern class="absolute inset-0 size-full stroke-gray-900/20 dark:stroke-neutral-100/20" />
-            </div>
-            <div class="relative aspect-video overflow-hidden rounded-xl border border-neutral-200 dark:border-neutral-700">
-                <x-placeholder-pattern class="absolute inset-0 size-full stroke-gray-900/20 dark:stroke-neutral-100/20" />
-            </div>
+
+            
+
         </div>
-        <div class="relative h-full flex-1 overflow-hidden rounded-xl border border-neutral-200 dark:border-neutral-700">
-            <x-placeholder-pattern class="absolute inset-0 size-full stroke-gray-900/20 dark:stroke-neutral-100/20" />
+    </nav>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto p-6">
+
+        <!-- Sección de tarjetas -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+            <!-- Card 1 -->
+            <div class="bg-white rounded-lg p-6 border border-orange-500 shadow-md">
+                <h2 class="text-xl font-bold text-orange-500 mb-2">Indicadores</h2>
+                <p class="text-gray-600 mb-4">Gestiona los indicadores académicos del semestre</p>
+                <a href="{{ route('indicadores') }}" class="bg-orange-500 text-white px-4 py-2 rounded font-semibold hover:bg-orange-600">Ver más</a>
+            </div>
+
+            <!-- Card 2 -->
+            <div class="bg-white rounded-lg p-6 border border-orange-500 shadow-md">
+                <h2 class="text-xl font-bold text-orange-500 mb-2">Plan de Estudio</h2>
+                <p class="text-gray-600 mb-4">Administra asignaturas y horarios del semestre</p>
+                <a href="{{ route('planestudio') }}" class="bg-orange-500 text-white px-4 py-2 rounded font-semibold hover:bg-orange-600">Ver más</a>
+            </div>
+
+            <!-- Card 3 -->
+            <div class="bg-white rounded-lg p-6 border border-orange-500 shadow-md">
+                <h2 class="text-xl font-bold text-orange-500 mb-2">Gestión de Roles</h2>
+                <p class="text-gray-600 mb-4">Visualiza y asigna roles a los usuarios</p>
+                <a href="{{ route('roles') }}" class="bg-orange-500 text-white px-4 py-2 rounded font-semibold hover:bg-orange-600">Ver más</a>
+            </div>
+
         </div>
-    </div>
-</x-layouts.app>
+
+      
+
+    </main>
+
+</body>
+</html>

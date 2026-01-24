@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Carreras</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .container {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 8px;
+        }
+        h1 {
+            color: #333;
+        }
+        select {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 2px solid #ccc;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        .status {
+            margin: 20px 0;
+            padding: 10px;
+            background: #e8f4f8;
+            border-left: 4px solid #2196F3;
+            border-radius: 4px;
+        }
+        .error {
+            background: #ffebee;
+            border-left-color: #f44336;
+            color: #c62828;
+        }
+        .success {
+            background: #e8f5e9;
+            border-left-color: #4caf50;
+            color: #2e7d32;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Test de Carga de Carreras</h1>
+        
+        <label for="carrera">Selecciona una carrera:</label>
+        <select id="carrera" name="carrera" disabled>
+            <option value="" selected>Cargando carreras...</option>
+        </select>
+        
+        <div id="status" class="status">
+            Esperando a que se cargue la página...
+        </div>
+        
+        <div id="debug" style="margin-top: 20px; padding: 10px; background: #fff; border: 1px solid #ccc; border-radius: 4px; font-size: 12px; white-space: pre-wrap; word-wrap: break-word;"></div>
+    </div>
+
+    <script>
+        const statusDiv = document.getElementById('status');
+        const debugDiv = document.getElementById('debug');
+        const carreraSelect = document.getElementById('carrera');
+        
+        function log(message) {
+            console.log(message);
+            debugDiv.textContent += message + '\n';
+        }
+        
+        function updateStatus(message, isError = false) {
+            statusDiv.textContent = message;
+            statusDiv.className = 'status ' + (isError ? 'error' : 'success');
+        }
+        
+        log('Script iniciado');
+        log('Elemento carrera encontrado: ' + (carreraSelect ? 'SÍ' : 'NO'));
+        
+        document.addEventListener('DOMContentLoaded', async function() {
+            log('\n=== DOMContentLoaded ===');
+            log('Iniciando carga de carreras desde API');
+            
+            try {
+                log('Haciendo fetch a /api/carreras');
+                const response = await fetch('/api/carreras');
+                log('Response status: ' + response.status);
+                
+                const carreras = await response.json();
+                log('Carreras recibidas: ' + JSON.stringify(carreras.slice(0, 2)));
+                
+                if (!carreras || carreras.length === 0) {
+                    log('ERROR: No hay carreras');
+                    carreraSelect.innerHTML = '<option value="">No hay carreras disponibles</option>';
+                    updateStatus('ERROR: No hay carreras en la base de datos', true);
+                } else {
+                    log('Total de carreras: ' + carreras.length);
+                    carreraSelect.disabled = false;
+                    carreraSelect.innerHTML = '<option value="" disabled selected>Seleccione una carrera...</option>';
+                    
+                    carreras.forEach((carrera, index) => {
+                        log('Agregando carrera ' + index + ': ' + carrera.nombre);
+                        const option = document.createElement('option');
+                        option.value = carrera.id;
+                        option.textContent = carrera.nombre;
+                        carreraSelect.appendChild(option);
+                    });
+                    
+                    log('Carreras cargadas exitosamente');
+                    updateStatus('✓ Carreras cargadas exitosamente (' + carreras.length + ' total)');
+                }
+            } catch (error) {
+                log('ERROR: ' + error.message);
+                log('Stack: ' + error.stack);
+                carreraSelect.innerHTML = '<option value="">Error al cargar carreras</option>';
+                updateStatus('ERROR: ' + error.message, true);
+            }
+        });
+    </script>
+</body>
+</html>

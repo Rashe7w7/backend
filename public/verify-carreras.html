@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Verificar Carreras</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 500px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f0f0f0;
+        }
+        .box {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #f97316;
+            text-align: center;
+        }
+        select {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            margin: 15px 0;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            text-align: center;
+            font-weight: bold;
+        }
+        .loading { background: #cce5ff; color: #0066cc; }
+        .success { background: #ccffcc; color: #00cc00; }
+        .error { background: #ffcccc; color: #cc0000; }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <h1>✓ Verificación de Carreras</h1>
+        
+        <div id="status" class="status loading">Cargando carreras...</div>
+        
+        <label for="carrera">Selecciona una carrera:</label>
+        <select id="carrera" disabled>
+            <option>Cargando...</option>
+        </select>
+        
+        <div id="result"></div>
+    </div>
+
+    <script>
+        const select = document.getElementById('carrera');
+        const statusDiv = document.getElementById('status');
+        const resultDiv = document.getElementById('result');
+        
+        async function loadCarreras() {
+            try {
+                console.log('Iniciando carga de carreras...');
+                statusDiv.textContent = 'Conectando al API...';
+                
+                const response = await fetch('/api/carreras');
+                console.log('Response status:', response.status);
+                
+                if (!response.ok) {
+                    throw new Error('HTTP ' + response.status);
+                }
+                
+                const carreras = await response.json();
+                console.log('Carreras recibidas:', carreras.length);
+                
+                if (!carreras || carreras.length === 0) {
+                    throw new Error('No hay carreras');
+                }
+                
+                // Limpiar select
+                select.innerHTML = '<option value="">-- Seleccione una carrera --</option>';
+                
+                // Agregar opciones
+                carreras.forEach(carrera => {
+                    const option = document.createElement('option');
+                    option.value = carrera.id;
+                    option.textContent = carrera.nombre;
+                    select.appendChild(option);
+                    console.log('Agregada:', carrera.nombre);
+                });
+                
+                select.disabled = false;
+                statusDiv.className = 'status success';
+                statusDiv.textContent = '✓ ' + carreras.length + ' carreras cargadas';
+                
+                resultDiv.innerHTML = '<div class="status success">Las carreras se han cargado correctamente. Selecciona una del dropdown.</div>';
+                
+            } catch (error) {
+                console.error('Error:', error);
+                statusDiv.className = 'status error';
+                statusDiv.textContent = '✗ Error: ' + error.message;
+                resultDiv.innerHTML = '<div class="status error">Error al cargar carreras:<br>' + error.message + '</div>';
+            }
+        }
+        
+        // Cargar cuando el DOM esté listo
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', loadCarreras);
+        } else {
+            loadCarreras();
+        }
+    </script>
+</body>
+</html>

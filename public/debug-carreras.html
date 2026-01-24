@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Carreras - Verificación Completa</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Roboto, Arial, sans-serif;
+            background-color: #f5f5f5;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            border-bottom: 3px solid #f97316;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #555;
+            margin-top: 30px;
+            margin-bottom: 15px;
+        }
+        .section {
+            background: white;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-item {
+            padding: 10px;
+            margin: 10px 0;
+            border-left: 4px solid #ddd;
+            border-radius: 4px;
+        }
+        .test-item.pass {
+            background-color: #e8f5e9;
+            border-left-color: #4caf50;
+            color: #2e7d32;
+        }
+        .test-item.fail {
+            background-color: #ffebee;
+            border-left-color: #f44336;
+            color: #c62828;
+        }
+        .test-item.info {
+            background-color: #e3f2fd;
+            border-left-color: #2196F3;
+            color: #1565c0;
+        }
+        select, input {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+            font-family: inherit;
+        }
+        select:focus, input:focus {
+            outline: none;
+            border-color: #f97316;
+            box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1);
+        }
+        button {
+            background: #f97316;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 16px;
+            margin: 10px 0;
+        }
+        button:hover {
+            background: #ea580c;
+        }
+        .code-block {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            margin: 10px 0;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .debug-output {
+            background: #1e1e1e;
+            color: #00ff00;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            margin: 10px 0;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Debug Completo: Carga de Carreras</h1>
+        
+        <div class="section">
+            <h2>1. Verificación de Conectividad</h2>
+            <div id="connectivity"></div>
+        </div>
+        
+        <div class="section">
+            <h2>2. Test del Dropdown</h2>
+            <label for="carrera">Selecciona una carrera:</label>
+            <select id="carrera" disabled>
+                <option value="">Cargando...</option>
+            </select>
+            <div id="select-status"></div>
+        </div>
+        
+        <div class="section">
+            <h2>3. Información Detallada</h2>
+            <div id="detailed-info"></div>
+        </div>
+        
+        <div class="section">
+            <h2>4. Console Output</h2>
+            <div class="debug-output" id="console-output"></div>
+        </div>
+    </div>
+
+    <script>
+        // Interceptar console para mostrar en la página
+        const originalLog = console.log;
+        const originalError = console.error;
+        const consoleOutput = document.getElementById('console-output');
+        
+        function addConsoleOutput(type, msg) {
+            const timestamp = new Date().toLocaleTimeString();
+            const line = `[${timestamp}] ${type}: ${msg}\n`;
+            consoleOutput.textContent += line;
+            consoleOutput.scrollTop = consoleOutput.scrollHeight;
+        }
+        
+        console.log = function(...args) {
+            originalLog(...args);
+            addConsoleOutput('LOG', args.join(' '));
+        };
+        
+        console.error = function(...args) {
+            originalError(...args);
+            addConsoleOutput('ERROR', args.join(' '));
+        };
+        
+        // Main execution
+        async function runAllTests() {
+            const carreraSelect = document.getElementById('carrera');
+            const connectivityDiv = document.getElementById('connectivity');
+            const selectStatusDiv = document.getElementById('select-status');
+            const detailedInfoDiv = document.getElementById('detailed-info');
+            
+            console.log('=== Iniciando Tests ===');
+            
+            // Test 1: API
+            console.log('Test 1: Conectividad con API');
+            try {
+                const response = await fetch('/api/carreras');
+                console.log('Respuesta HTTP status:', response.status);
+                
+                if (!response.ok) {
+                    throw new Error('HTTP ' + response.status);
+                }
+                
+                const carreras = await response.json();
+                console.log('Datos recibidos:', carreras.length + ' carreras');
+                console.log('Primeras 2 carreras:', JSON.stringify(carreras.slice(0, 2), null, 2));
+                
+                connectivityDiv.innerHTML = `
+                    <div class="test-item pass">
+                        ✓ API respondió correctamente con ${carreras.length} carreras
+                    </div>
+                    <div class="test-item info">
+                        Datos de ejemplo:
+                        <div class="code-block">${JSON.stringify(carreras[0], null, 2)}</div>
+                    </div>
+                `;
+                
+                // Test 2: Llenar select
+                console.log('Test 2: Llenando dropdown');
+                if (carreras && carreras.length > 0) {
+                    carreraSelect.disabled = false;
+                    carreraSelect.innerHTML = '<option value="" disabled selected>Seleccione una carrera...</option>';
+                    
+                    carreras.forEach((carrera, index) => {
+                        console.log(`Agregando opción ${index}: ${carrera.nombre}`);
+                        const option = document.createElement('option');
+                        option.value = carrera.id;
+                        option.textContent = carrera.nombre;
+                        carreraSelect.appendChild(option);
+                    });
+                    
+                    selectStatusDiv.innerHTML = `
+                        <div class="test-item pass">
+                            ✓ ${carreras.length} opciones agregadas al dropdown
+                        </div>
+                        <div class="test-item info">
+                            El dropdown ahora tiene ${carreraSelect.options.length} opciones total
+                        </div>
+                    `;
+                    
+                    console.log('Dropdown actualizado con éxito');
+                } else {
+                    throw new Error('No hay carreras en la respuesta');
+                }
+                
+            } catch (error) {
+                console.error('Error:', error.message);
+                console.error('Stack:', error.stack);
+                
+                connectivityDiv.innerHTML = `
+                    <div class="test-item fail">
+                        ✗ Error al conectar con API: ${error.message}
+                    </div>
+                `;
+                
+                selectStatusDiv.innerHTML = `
+                    <div class="test-item fail">
+                        ✗ No se pudo llenar el dropdown
+                    </div>
+                `;
+            }
+            
+            // Test 3: Información detallada
+            console.log('Test 3: Información del DOM');
+            const info = `
+Elemento select encontrado: ${carreraSelect ? 'SÍ' : 'NO'}
+ID del select: ${carreraSelect.id}
+Número de opciones: ${carreraSelect.options.length}
+Select habilitado: ${!carreraSelect.disabled}
+Valor seleccionado: ${carreraSelect.value || '(vacío)'}
+
+Opciones en el select:
+${Array.from(carreraSelect.options).map((opt, i) => `  ${i}: value="${opt.value}", text="${opt.text}"`).join('\n')}
+            `;
+            
+            console.log('Información del DOM:\n' + info);
+            
+            detailedInfoDiv.innerHTML = `
+                <div class="test-item info">
+                    <strong>Estado del DOM:</strong>
+                    <div class="code-block">${info.trim()}</div>
+                </div>
+            `;
+        }
+        
+        // Ejecutar cuando el DOM esté listo
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOMContentLoaded dispuesto');
+            runAllTests();
+        });
+        
+        // También ejecutar inmediatamente (por si acaso)
+        if (document.readyState === 'loading') {
+            console.log('Esperando a que el DOM cargue...');
+        } else {
+            console.log('DOM ya está listo, ejecutando tests inmediatamente');
+            runAllTests();
+        }
+    </script>
+</body>
+</html>
