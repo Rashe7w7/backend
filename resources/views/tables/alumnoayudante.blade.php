@@ -1,6 +1,4 @@
 
-
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -197,18 +195,26 @@
         }
 
         function cerrarFormulario() {
-            document.getElementById('formulario').classList.add('hidden');
-            document.getElementById('btnDesignar').classList.remove('hidden');
-            limpiarCampos();
-        }
-
+    document.getElementById('formulario').classList.add('hidden');
+    document.getElementById('btnDesignar').classList.remove('hidden');
+    // limpia el select de alumnos al cerrar
+    const alumnoSelect = document.getElementById('alumno_id');
+    if (alumnoSelect) {
+        alumnoSelect.value = '';
+    }
+   
+    estudianteTemp = null;
+}
         function limpiarCampos() {
-            document.getElementById('nombreCompleto').value = '';
-            document.getElementById('email').value = '';
-            document.getElementById('carrera').value = '';
-        }
+    
+  
+    const alumnoSelect = document.getElementById('alumno_id');
+    if (alumnoSelect) {
+        alumnoSelect.value = '';
+    }
+}
 
-        // ===== CONTINUAR A MODAL =====
+       
         function continuar() {
             var alumno_id = document.getElementById('alumno_id').value;
 
@@ -315,37 +321,41 @@
             filaAEliminar = null;
         }
 
-        async function confirmarEliminar() {
-            if (!filaAEliminar) return;
+       async function confirmarEliminar() {
+    if (!filaAEliminar) return;
 
-            const alumnoayudanteId = filaAEliminar.dataset.id;
+    const alumnoayudanteId = filaAEliminar.dataset.id;
 
-            if (!alumnoayudanteId) {
-                alert('❌ Error: No se pudo identificar el registro');
-                cerrarModalEliminar();
-                return;
+    if (!alumnoayudanteId) {
+        alert('❌ Error: No se pudo identificar el registro');
+        cerrarModalEliminar();
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/alumnoayudante/' + alumnoayudanteId, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Accept': 'application/json'
             }
+        });
 
-            try {
-                const response = await fetch('/api/alumnoayudante/' + alumnoayudanteId, {
-                    method: 'DELETE',
-                    headers: {
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                    }
-                });
+        const data = await response.json();
 
-                if (response.ok) {
-                    filaAEliminar.remove();
-                } else {
-                    const data = await response.json();
-                    alert('❌ Error al eliminar: ' + (data.error || 'Error desconocido'));
-                }
-            } catch (error) {
-                alert('❌ Error al eliminar: ' + error.message);
-            }
-
-            cerrarModalEliminar();
+        if (response.ok) {
+            // ✅ Eliminar la fila visualmente
+            filaAEliminar.remove();
+            alert('✅ Alumno ayudante eliminado correctamente');
+        } else {
+            alert('❌ Error al eliminar: ' + (data.error || 'Error desconocido'));
         }
+    } catch (error) {
+        alert('❌ Error al eliminar: ' + error.message);
+    }
+
+    cerrarModalEliminar();
+}
     </script>
 
 </body>

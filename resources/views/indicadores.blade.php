@@ -32,7 +32,6 @@
 </head>
 <body class="bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
 
-
 <nav class="bg-white border-b-2 border-primary shadow-sm sticky top-0 z-50">
     <div class="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
         <div class="flex items-center gap-3">
@@ -206,6 +205,18 @@
         
         <div id="infoAnoAcademico" class="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg hidden">
             <p class="text-sm text-blue-700"><span class="font-semibold">Período Académico:</span> <span id="annoAcademicoBadge" class="font-medium"></span></p>
+          
+<div class="mb-4 p-3 bg-gray-50 border border-gray-200 rounded-lg flex flex-col sm:flex-row sm:items-center gap-2">
+    <div class="flex items-center gap-1 min-w-fit">
+        <svg class="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+        </svg>
+        <span class="text-sm font-medium text-gray-700"></span>
+    </div>
+    <input type="text" id="instanciaCSV" placeholder="Instancia(ejemplo: de Facultad escribir FMFC)" 
+           class="flex-1 p-2 border border-gray-200 rounded-lg text-sm input-focus bg-white">
+
+</div>
         </div>
         
         <div class="overflow-x-auto">
@@ -253,7 +264,6 @@
     </section>
 </main>
 
-
 <div id="modalCategoria" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
     <div class="bg-white rounded-xl p-6 w-full max-w-md mx-4 fade-in">
         <h3 class="text-lg font-bold text-gray-800 mb-4">Añadir nueva categoría</h3>
@@ -270,7 +280,6 @@
     </div>
 </div>
 
-
 <div id="toast" class="fixed bottom-4 right-4 bg-gray-800 text-white px-6 py-3 rounded-lg shadow-lg transform translate-y-20 opacity-0 transition-all duration-300 z-50">
     <span id="toastMessage"></span>
 </div>
@@ -283,7 +292,6 @@ let categoriasIndicador = {};
 let categoriasPorId = {};
 let especificacionTabla = null; // Controla el tipo de especificación permitida en la tabla
 let annoAcademicoTabla = null; // Almacena el año académico de la tabla
-
 
 document.addEventListener('DOMContentLoaded', function() {
     cargarCursos();
@@ -972,7 +980,6 @@ function obtenerEspecificacionVista() {
 }
 
 
-
 function exportarCSV() {
     const tbody = document.getElementById('vistaBody');
     const filas = tbody.querySelectorAll('tr:not(#filaVacia)');
@@ -1031,5 +1038,6 @@ function eliminarIndicadorDB(id) {
 
 </body>
 </html>
+
 
 

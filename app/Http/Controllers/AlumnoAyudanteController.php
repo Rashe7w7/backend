@@ -82,8 +82,16 @@ class AlumnoAyudanteController extends Controller
             if (!$profesorAsignatura) {
                 throw new \Exception("El profesor {$profesor->nombre} no dicta la asignatura {$asignatura->nombre}");
             }
-            
-            // Crear registro en estudiante_ayudante
+                        // VALIDAR que no exista ya el mismo alumno como ayudante en esta asignatura y año
+            $existe = AlumnoAyudante::where('alumno_id', $alumno->id)
+                ->where('profesor_asignatura_id', $profesorAsignatura->id)
+                ->where('curso_academico_id', $request->curso_academico_id)
+                ->exists();
+
+            if ($existe) {
+                throw new \Exception("El alumno {$alumno->nombre} ya está registrado como ayudante en la asignatura {$asignatura->nombre} para el período {$cursoAcademico->nombre}");
+            }
+                        // Crear registro en estudiante_ayudante
             $alumnoAyudante = AlumnoAyudante::create([
                 'alumno_id' => $alumno->id,
                 'profesor_asignatura_id' => $profesorAsignatura->id,
