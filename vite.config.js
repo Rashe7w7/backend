@@ -1,4 +1,14 @@
-// Vite no se utiliza en este proyecto
-// Todo el CSS se carga desde CDN (Tailwind CSS)
-// Todo el JavaScript se carga desde CDN (Alpine.js, etc.)
-export default {};
+import { defineConfig } from 'vite'
+import laravel from 'laravel-vite-plugin'
+
+export default defineConfig({
+    plugins: [
+        laravel({
+            input: [
+                'resources/css/app.css',
+                'resources/js/app.js'
+            ],
+            refresh: true,
+        }),
+    ],
+})
