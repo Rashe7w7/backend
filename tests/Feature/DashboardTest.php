@@ -1,16 +1,7 @@
 <?php
 
-use App\Models\User;
-
-test('guests are redirected to the login page', function () {
-    $response = $this->get(route('dashboard'));
-    $response->assertRedirect(route('login'));
-});
-
-test('authenticated users can visit the dashboard', function () {
-    $user = User::factory()->create();
-    $this->actingAs($user);
-
-    $response = $this->get(route('dashboard'));
-    $response->assertStatus(200);
+// NOTE: this app currently has no authentication, so the dashboard is public.
+// This test must change (guests redirected) when real auth is added.
+test('dashboard is reachable', function () {
+    $this->get(route('dashboard'))->assertStatus(200);
 });
