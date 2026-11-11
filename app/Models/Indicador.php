@@ -28,44 +28,7 @@ class Indicador extends Model
         return $this->hasMany(IndicadorValor::class, 'indicador_id');
     }
 
-    /**
-     * Relación: valores por grupo
-     */
-    public function valoresGrupo()
-    {
-        return $this->hasMany(IndicadorGrupoValor::class, 'indicador_id');
-    }
-
-    /**
-     * Relación: valores por año académico
-     */
-    public function valoresAno()
-    {
-        return $this->hasMany(IndicadorAnoValor::class, 'indicador_id');
-    }
-
-    /**
-     * Relación: valores por facultad
-     */
-    public function valoresFacultad()
-    {
-        return $this->hasMany(IndicadorFacultadValor::class, 'indicador_id');
-    }
-
-    /**
-     * Función auxiliar: devuelve valor según tipo de entidad y su id
-     */
-    public function valorPorEntidad(string $tipo, int $entidadId)
-    {
-        switch ($tipo) {
-            case 'grupo':
-                return $this->valoresGrupo()->where('grupo_id', $entidadId)->first();
-            case 'anno':
-                return $this->valoresAno()->where('anio_id', $entidadId)->first();
-            case 'facultad':
-                return $this->valoresFacultad()->where('facultad_id', $entidadId)->first();
-            default:
-                return null;
-        }
-    }
+    // Se eliminaron valoresGrupo/valoresAno/valoresFacultad/valorPorEntidad:
+    // apuntaban a modelos inexistentes (IndicadorGrupoValor, IndicadorAnoValor,
+    // IndicadorFacultadValor) y no se usaban en ningún sitio.
 }

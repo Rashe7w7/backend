@@ -36,6 +36,7 @@ class IndicadorController extends Controller
             $request->validate([
                 'indicadores.*.nombre' => 'required|string|max:255|unique:indicador,nombre',
                 'indicadores.*.especificacion' => 'required|string|in:grupo,facultad,departamento,carrera,anno,general',
+                'curso_academico_id' => 'nullable|integer|exists:curso_academico,id',
             ]);
 
             $cursoAcademicoId = $request->input('curso_academico_id');
@@ -63,6 +64,7 @@ class IndicadorController extends Controller
                 switch ($especificacion) {
                     case 'carrera':
                         IndicadorCarrera::create([
+                            'nombre' => $indicador->nombre,
                             'indicador_id' => $indicador->id,
                             'carrera_id' => null,
                             'curso_academico_id' => $cursoAcademicoId,
@@ -70,6 +72,7 @@ class IndicadorController extends Controller
                         break;
                     case 'grupo':
                         IndicadorGrupo::create([
+                            'nombre' => $indicador->nombre,
                             'indicador_id' => $indicador->id,
                             'grupo_id' => null,
                             'curso_academico_id' => $cursoAcademicoId,
@@ -77,6 +80,7 @@ class IndicadorController extends Controller
                         break;
                     case 'facultad':
                         IndicadorFacultad::create([
+                            'nombre' => $indicador->nombre,
                             'indicador_id' => $indicador->id,
                             'facultad_id' => null,
                             'curso_academico_id' => $cursoAcademicoId,
@@ -84,6 +88,7 @@ class IndicadorController extends Controller
                         break;
                     case 'departamento':
                         IndicadorDepartamento::create([
+                            'nombre' => $indicador->nombre,
                             'indicador_id' => $indicador->id,
                             'departamento_id' => null,
                             'curso_academico_id' => $cursoAcademicoId,
@@ -91,6 +96,7 @@ class IndicadorController extends Controller
                         break;
                     case 'anno':
                         IndicadorAnio::create([
+                            'nombre' => $indicador->nombre,
                             'indicador_id' => $indicador->id,
                             'anio_academico_id' => null,
                             'curso_academico_id' => $cursoAcademicoId,
@@ -121,7 +127,7 @@ class IndicadorController extends Controller
         // Validar y guardar cada valor de indicador
         if ($request->has('valores') && is_array($request->valores)) {
             foreach ($request->valores as $indicador_id => $valor) {
-                if (!is_numeric($indicador_id) || $valor === null || $valor === '') {
+                if (!is_numeric($indicador_id) || !is_numeric($valor)) {
                     continue;
                 }
 

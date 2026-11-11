@@ -15,6 +15,6 @@ class Modificacion extends Model
 
     public function versiones()
     {
-        return $this->belongsToMany(Version::class, 'version_modificaciones', 'modificacion_id', 'version_id');
+        return $this->belongsToMany(Version::class, 'version_modificacion', 'modificacion_id', 'version_id');
     }
 }

@@ -33,7 +33,7 @@ class DataController extends Controller
 
     public function storeFacultad(Request $request)
     {
-        $validated = $request->validate(['nombre' => 'required|string|unique:facultades']);
+        $validated = $request->validate(['nombre' => 'required|string|unique:facultad,nombre']);
         $facultad = Facultad::create($validated);
         return response()->json($facultad, 201);
     }
@@ -48,7 +48,7 @@ class DataController extends Controller
     {
         $validated = $request->validate([
             'nombre' => 'required|string',
-            'facultad_id' => 'required|exists:facultades,id'
+            'facultad_id' => 'required|exists:facultad,id'
         ]);
         $departamento = Departamento::create($validated);
         return response()->json($departamento, 201);
@@ -71,7 +71,7 @@ class DataController extends Controller
     {
         $validated = $request->validate([
             'nombre' => 'required|string',
-            'facultad_id' => 'required|exists:facultades,id'
+            'facultad_id' => 'required|exists:facultad,id'
         ]);
         $carrera = Carrera::create($validated);
         return response()->json($carrera, 201);
@@ -113,7 +113,7 @@ class DataController extends Controller
     {
         $validated = $request->validate([
             'nombre' => 'required|string',
-            'carrera_id' => 'required|exists:carreras,id',
+            'carrera_id' => 'required|exists:carrera,id',
             'fecha_inicio' => 'required|date',
             'fecha_fin' => 'nullable|date',
             'vigente' => 'boolean'
@@ -143,7 +143,7 @@ class DataController extends Controller
     {
         $validated = $request->validate([
             'nombre' => 'required|string',
-            'plan_estudio_id' => 'required|exists:planes_estudio,id'
+            'plan_estudio_id' => 'required|exists:plan_estudio,id'
         ]);
         $disciplina = Disciplina::create($validated);
         return response()->json($disciplina, 201);
@@ -202,7 +202,7 @@ class DataController extends Controller
     {
         $validated = $request->validate([
             'nombre' => 'required|string',
-            'disciplina_id' => 'required|exists:disciplinas,id'
+            'disciplina_id' => 'required|exists:disciplina,id'
         ]);
         $asignatura = Asignatura::create($validated);
         return response()->json($asignatura, 201);
@@ -218,7 +218,7 @@ class DataController extends Controller
     {
         $validated = $request->validate([
             'nombre' => 'required|string',
-            'asignatura_id' => 'required|exists:asignaturas,id'
+            'asignatura_id' => 'required|exists:asignatura,id'
         ]);
         $curriculo = Curriculo::create($validated);
         return response()->json($curriculo, 201);
@@ -239,8 +239,8 @@ class DataController extends Controller
     public function storeAnioAcademico(Request $request)
     {
         $validated = $request->validate([
-            'nombre' => 'required|string|unique:anios_academicos',
-            'carrera_id' => 'required|exists:carreras,id'
+            'nombre' => 'required|string|unique:anio_academico,nombre',
+            'carrera_id' => 'required|exists:carrera,id'
         ]);
         $anio = AnioAcademico::create($validated);
         return response()->json($anio, 201);
@@ -256,7 +256,7 @@ class DataController extends Controller
     {
         $validated = $request->validate([
             'nombre' => 'required|string',
-            'anio_academico_id' => 'required|exists:anios_academicos,id'
+            'anio_academico_id' => 'required|exists:anio_academico,id'
         ]);
         $grupo = Grupo::create($validated);
         return response()->json($grupo, 201);
@@ -272,8 +272,8 @@ class DataController extends Controller
     {
         $validated = $request->validate([
             'nombre' => 'required|string',
-            'email' => 'nullable|email|unique:alumnos',
-            'grupo_id' => 'required|exists:grupos,id'
+            'email' => 'nullable|email|unique:estudiante,email',
+            'grupo_id' => 'required|exists:grupo,id'
         ]);
         $alumno = Alumno::create($validated);
         return response()->json($alumno, 201);
@@ -287,7 +287,7 @@ class DataController extends Controller
 
     public function storeCategoriaIndicador(Request $request)
     {
-        $validated = $request->validate(['nombre' => 'required|string|unique:categoria_indicador']);
+        $validated = $request->validate(['nombre' => 'required|string|unique:categoria_indicador,nombre']);
         $categoria = CategoriaIndicador::create($validated);
         return response()->json($categoria, 201);
     }
@@ -378,7 +378,7 @@ class DataController extends Controller
         // Crear solo el indicador padre; la asignación a entidad específica
         // se hará en pasos posteriores cuando el usuario seleccione destino
         $validated = $request->validate([
-            'nombre' => 'required|string',
+            'nombre' => 'required|string|unique:indicador,nombre',
             'especificacion' => 'required|string|in:grupo,facultad,departamento,carrera,anno'
         ]);
 
@@ -444,6 +444,9 @@ class DataController extends Controller
         if ($exists) {
             return response()->json($exists, 200);
         }
+
+        // indicador_carrera.nombre es NOT NULL: se copia del indicador padre
+        $validated['nombre'] = Indicador::whereKey($validated['indicador_id'])->value('nombre');
 
         $row = IndicadorCarrera::create($validated);
         return response()->json($row, 201);

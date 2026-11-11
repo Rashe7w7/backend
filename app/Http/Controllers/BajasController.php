@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\BajasEstudiantes;
+use App\Models\BajaEstudiante;
 use App\Models\AnioAcademico;
 use App\Models\Carrera;
 use App\Models\Facultad;
@@ -50,21 +50,21 @@ class BajasController extends Controller
         // Filtrar por facultad si se especifica
         if ($facultadId) {
             $query = $query->whereHas('alumno.grupo.anioAcademico.carrera.facultad', function ($q) use ($facultadId) {
-                $q->where('facultades.id', $facultadId);
+                $q->where('facultad.id', $facultadId);
             });
         }
         
         // Filtrar por carrera si se especifica
         if ($carreraId) {
             $query = $query->whereHas('alumno.grupo.anioAcademico.carrera', function ($q) use ($carreraId) {
-                $q->where('carreras.id', $carreraId);
+                $q->where('carrera.id', $carreraId);
             });
         }
         
         // Filtrar por grupo si se especifica
         if ($grupoId) {
             $query = $query->whereHas('alumno.grupo', function ($q) use ($grupoId) {
-                $q->where('grupos.id', $grupoId);
+                $q->where('grupo.id', $grupoId);
             });
         }
         
@@ -75,19 +75,19 @@ class BajasController extends Controller
         
         if ($facultadId) {
             $alumnosQuery = $alumnosQuery->whereHas('grupo.anioAcademico.carrera.facultad', function ($q) use ($facultadId) {
-                $q->where('facultades.id', $facultadId);
+                $q->where('facultad.id', $facultadId);
             });
         }
         
         if ($carreraId) {
             $alumnosQuery = $alumnosQuery->whereHas('grupo.anioAcademico.carrera', function ($q) use ($carreraId) {
-                $q->where('carreras.id', $carreraId);
+                $q->where('carrera.id', $carreraId);
             });
         }
         
         if ($grupoId) {
             $alumnosQuery = $alumnosQuery->whereHas('grupo', function ($q) use ($grupoId) {
-                $q->where('grupos.id', $grupoId);
+                $q->where('grupo.id', $grupoId);
             });
         }
         
@@ -105,7 +105,7 @@ class BajasController extends Controller
             $bajasporCausa = $bajas->groupBy('causa')->map(function ($items) use ($totalBajas, $matriculaInicial) {
                 $cantidad = $items->count();
                 return [
-                    'causa' => BajasEstudiantes::CAUSAS[$items->first()->causa] ?? ucwords(str_replace('_', ' ', $items->first()->causa)),
+                    'causa' => BajaEstudiante::CAUSAS[$items->first()->causa] ?? ucwords(str_replace('_', ' ', $items->first()->causa)),
                     'causa_key' => $items->first()->causa,
                     'cantidad' => $cantidad,
                     'porcentaje_matricula' => $matriculaInicial > 0 ? round(($cantidad / $matriculaInicial) * 100, 2) : 0,
@@ -121,7 +121,7 @@ class BajasController extends Controller
                 'alumno_nombre' => $baja->alumno->nombre,
                 'alumno_email' => $baja->alumno->email,
                 'grupo' => $baja->alumno->grupo->nombre,
-                'causa' => BajasEstudiantes::CAUSAS[$baja->causa] ?? ucwords(str_replace('_', ' ', $baja->causa)),
+                'causa' => BajaEstudiante::CAUSAS[$baja->causa] ?? ucwords(str_replace('_', ' ', $baja->causa)),
                 'observaciones' => $baja->observaciones,
                 'fecha' => $baja->created_at->format('d/m/Y'),
             ];

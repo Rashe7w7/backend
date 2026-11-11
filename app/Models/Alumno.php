@@ -25,6 +25,6 @@ class Alumno extends Model
 
     public function alumnoAyudante()
     {
-        return $this->hasMany(EstudianteAyudante::class, 'alumno_id');
+        return $this->hasMany(AlumnoAyudante::class, 'alumno_id');
     }
 }

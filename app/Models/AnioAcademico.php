@@ -30,14 +30,19 @@ class AnioAcademico extends Model
         );
     }
 
+    /**
+     * Bajas de los estudiantes de los grupos de este año académico.
+     *
+     * baja_estudiante -> estudiante -> grupo -> anio_academico son dos tablas
+     * intermedias, así que no se puede expresar con hasManyThrough (la versión
+     * anterior comparaba estudiante.grupo_id con anio_academico.id). Devuelve un
+     * query builder, no una relación: usar $anio->bajas()->get(), no $anio->bajas.
+     */
     public function bajas()
     {
-        return $this->hasManyThrough(
-            BajaEstudiante::class,
-            Alumno::class,
-            'grupo_id',
-            'alumno_id'
-        );
+        return BajaEstudiante::query()->whereHas('alumno.grupo', function ($q) {
+            $q->where('anio_academico_id', $this->getKey());
+        });
     }
 
     public function indicadores()

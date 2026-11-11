@@ -304,7 +304,6 @@ document.addEventListener('DOMContentLoaded', function() {
     cargarCategorias().then(() => {
         cargarIndicadores();
     });
-    actualizarAvisoEspecificacion();
 });
 
 function mostrarToast(mensaje, tipo = 'success') {
@@ -712,7 +711,6 @@ function agregarFilaVista(nombre, categoria, espec, cursoId = null) {
     `;
     tbody.appendChild(fila);
     actualizarContador();
-    actualizarAvisoEspecificacion();
     mostrarToast(`"${nombre}" añadido a la vista`);
 }
 
@@ -749,7 +747,6 @@ function eliminarFila(btn) {
         annoAcademicoTabla = null;
         document.getElementById('infoAnoAcademico').classList.add('hidden');
     }
-    actualizarAvisoEspecificacion();
 }
 
 // Actualizar contador
@@ -777,7 +774,6 @@ function limpiarVista() {
     annoAcademicoTabla = null; // Reiniciar el año académico
     document.getElementById('infoAnoAcademico').classList.add('hidden'); // Ocultar la información del año académico
     actualizarContador();
-    actualizarAvisoEspecificacion();
     mostrarToast('Vista limpiada');
 }
 
