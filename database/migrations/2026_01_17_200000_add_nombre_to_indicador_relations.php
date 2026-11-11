@@ -12,7 +12,7 @@ return new class extends Migration {
             'indicador_grupo',
             'indicador_departamento',
             'indicador_facultad',
-            'indicador_anio',
+            'indicador_anno',
         ];
 
         foreach ($tables as $table) {
@@ -32,7 +32,7 @@ return new class extends Migration {
             'indicador_grupo',
             'indicador_departamento',
             'indicador_facultad',
-            'indicador_anio',
+            'indicador_anno',
         ];
 
         foreach ($tables as $table) {

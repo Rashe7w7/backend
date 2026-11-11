@@ -9,18 +9,24 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // Crear la carrera Informática si no existe
-        $carreraId = DB::table('carrera')->insertOrIgnore([
-            'nombre' => 'Ingeniería Informática',
-            'facultad_id' => 1,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+        // Crear la carrera Informática si no existe.
+        // (insertOrIgnore devuelve el nº de filas afectadas, no el ID, y no
+        // evita duplicados porque carrera.nombre no es único: se busca primero.)
+        $carrera = DB::table('carrera')->where('nombre', 'Ingeniería Informática')->first();
 
-        // Si insertOrIgnore no retorna el ID, obtenerlo
-        if (!$carreraId) {
-            $carrera = DB::table('carrera')->where('nombre', 'Ingeniería Informática')->first();
+        if ($carrera) {
             $carreraId = $carrera->id;
+        } elseif (DB::table('facultad')->where('id', 1)->exists()) {
+            $carreraId = DB::table('carrera')->insertGetId([
+                'nombre' => 'Ingeniería Informática',
+                'facultad_id' => 1,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        } else {
+            // Base de datos vacía (p. ej. migrate:fresh): no hay facultad a la
+            // que asociar la carrera; los datos los crean los seeders.
+            return;
         }
 
         // Crear 4 planes de estudio con nombres a, b, c, d

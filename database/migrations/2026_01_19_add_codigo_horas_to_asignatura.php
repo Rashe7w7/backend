@@ -22,6 +22,9 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('asignatura', function (Blueprint $table) {
+            if (Schema::hasIndex('asignatura', 'asignatura_codigo_unique')) {
+                $table->dropUnique(['codigo']);
+            }
             $table->dropColumn(['codigo', 'horas']);
         });
     }

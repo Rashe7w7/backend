@@ -34,6 +34,8 @@ return new class extends Migration
             
             if (Schema::hasColumn('indicador', 'categoria_indicador_id')) {
                 $table->dropForeign(['categoria_indicador_id']);
+                // El índice explícito debe eliminarse antes que la columna (SQLite lo exige)
+                $table->dropIndex(['categoria_indicador_id']);
                 $table->dropColumn('categoria_indicador_id');
             }
         });

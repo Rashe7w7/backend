@@ -201,7 +201,8 @@ class FakeDataSeeder extends Seeder
         foreach ($categorias as $categoria) {
             for ($i = 0; $i < 3; $i++) {
                 $indicadores[] = DB::table('indicador')->insertGetId([
-                    'nombre' => 'Indicador ' . $faker->word,
+                    // indicador.nombre es único (2026_01_23_add_unique_nombre_indicadores)
+                    'nombre' => 'Indicador ' . $faker->unique()->word,
                     'categoria_indicador_id' => $categoria,
                     'created_at' => now(),
                     'updated_at' => now(),
@@ -321,7 +322,9 @@ class FakeDataSeeder extends Seeder
         foreach ($profesores as $profesor) {
             $combinaciones = $faker->numberBetween(1, 3);
             for ($i = 0; $i < $combinaciones; $i++) {
-                DB::table('profesor_categoria_grado')->insert([
+                // La combinación es única en la tabla: insertOrIgnore evita fallos
+                // aleatorios cuando el faker repite una combinación.
+                DB::table('profesor_categoria_grado')->insertOrIgnore([
                     'profesor_id' => $profesor,
                     'categoria_docente_id' => $faker->randomElement($categoriasDocentes),
                     'categoria_cientifica_id' => $faker->randomElement($categoriasCientificas),
@@ -371,22 +374,49 @@ class FakeDataSeeder extends Seeder
             }
         }
 
-        // ALUMNO AYUDANTE (algunos alumnos son ayudantes en asignaturas)
+        // CURSO ACADÉMICO (se crea antes porque profesor_asignatura y
+        // estudiante_ayudante lo referencian)
+        $cursosAcademicos = [];
+        for ($year = 2023; $year <= 2026; $year++) {
+            $cursosAcademicos[] = DB::table('curso_academico')->insertGetId([
+                'nombre' => "Curso $year-" . ($year + 1),
+                'fecha_inicio' => "$year-09-01 00:00:00",
+                'fecha_fin' => ($year + 1) . "-08-31 23:59:59",
+                'activo' => $year == 2025,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+
+        // PROFESOR - ASIGNATURA (un profesor por asignatura en el curso activo)
+        $cursoActivoId = $cursosAcademicos[2];
+        $profesorAsignaturas = [];
+        foreach ($asignaturas as $asignatura) {
+            $profesorAsignaturas[] = DB::table('profesor_asignatura')->insertGetId([
+                'profesor_id' => $faker->randomElement($profesores),
+                'asignatura_id' => $asignatura,
+                'curso_academico_id' => $cursoActivoId,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+
+        // ALUMNO AYUDANTE (algunos alumnos son ayudantes de un profesor en una asignatura)
+        // Esquema actual: alumno_id + profesor_asignatura_id + curso_academico_id
         $alumnosAyudantes = [];
         foreach (array_slice($alumnos, 0, intval(count($alumnos) * 0.15)) as $alumno) {
-            $asignatura = $faker->randomElement($asignaturas);
-            
+            $profesorAsignatura = $faker->randomElement($profesorAsignaturas);
+
             $exists = DB::table('estudiante_ayudante')
                 ->where('alumno_id', $alumno)
-                ->where('asignatura_id', $asignatura)
+                ->where('profesor_asignatura_id', $profesorAsignatura)
                 ->exists();
-            
+
             if (!$exists) {
                 $alumnosAyudantes[] = DB::table('estudiante_ayudante')->insertGetId([
                     'alumno_id' => $alumno,
-                    'asignatura_id' => $asignatura,
-                    'fecha_inicio' => now()->subMonths($faker->numberBetween(1, 6)),
-                    'fecha_fin' => null,
+                    'profesor_asignatura_id' => $profesorAsignatura,
+                    'curso_academico_id' => $cursoActivoId,
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
@@ -457,19 +487,6 @@ class FakeDataSeeder extends Seeder
             }
         }
 
-        // CURSO ACADÉMICO
-        $cursosAcademicos = [];
-        for ($year = 2023; $year <= 2026; $year++) {
-            $cursosAcademicos[] = DB::table('curso_academico')->insertGetId([
-                'nombre' => "Curso $year-" . ($year + 1),
-                'fecha_inicio' => "$year-09-01 00:00:00",
-                'fecha_fin' => ($year + 1) . "-08-31 23:59:59",
-                'activo' => $year == 2025,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-        }
-
         // VERSIONES
         $versiones = [];
         foreach (['v1.0', 'v1.1', 'v2.0', 'v2.1'] as $version) {
@@ -521,8 +538,13 @@ class FakeDataSeeder extends Seeder
             }
         }
 
+        // Las tablas indicador_* exigen 'nombre' (2026_01_17_200000)
+
+        $nombresIndicadores = DB::table('indicador')->pluck('nombre', 'id')->all();
+
+
         // INDICADORES POR FACULTAD
-        foreach ($categorias as $indicador) {
+        foreach (array_slice($indicadores, 0, 4) as $indicador) {
             $cursoActivo = end($cursosAcademicos);
             
             $exists = DB::table('indicador_facultad')
@@ -533,6 +555,7 @@ class FakeDataSeeder extends Seeder
             
             if (!$exists) {
                 DB::table('indicador_facultad')->insert([
+                    'nombre' => $nombresIndicadores[$indicador] ?? 'Indicador',
                     'indicador_id' => $indicador,
                     'facultad_id' => $fmfcId,
                     'curso_academico_id' => $cursoActivo,
@@ -555,6 +578,7 @@ class FakeDataSeeder extends Seeder
             
             if (!$exists) {
                 DB::table('indicador_departamento')->insert([
+                    'nombre' => $nombresIndicadores[$indicador] ?? 'Indicador',
                     'indicador_id' => $indicador,
                     'departamento_id' => $deptId,
                     'curso_academico_id' => $cursoActivo,
@@ -577,6 +601,7 @@ class FakeDataSeeder extends Seeder
             
             if (!$exists) {
                 DB::table('indicador_carrera')->insert([
+                    'nombre' => $nombresIndicadores[$indicador] ?? 'Indicador',
                     'indicador_id' => $indicador,
                     'carrera_id' => $carreraId,
                     'curso_academico_id' => $cursoActivo,
@@ -599,6 +624,7 @@ class FakeDataSeeder extends Seeder
             
             if (!$exists) {
                 DB::table('indicador_grupo')->insert([
+                    'nombre' => $nombresIndicadores[$indicador] ?? 'Indicador',
                     'indicador_id' => $indicador,
                     'grupo_id' => $grupoId,
                     'curso_academico_id' => $cursoActivo,
@@ -621,6 +647,7 @@ class FakeDataSeeder extends Seeder
             
             if (!$exists) {
                 DB::table('indicador_anno')->insert([
+                    'nombre' => $nombresIndicadores[$indicador] ?? 'Indicador',
                     'indicador_id' => $indicador,
                     'anio_academico_id' => $anioId,
                     'curso_academico_id' => $cursoActivo,

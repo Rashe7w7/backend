@@ -31,13 +31,10 @@ return new class extends Migration
         }
 
         // Agregar índice único si no existe
-        $indexExists = DB::select("
-            SELECT 1 FROM pg_indexes 
-            WHERE tablename = 'anio_asignatura' 
-            AND indexname = 'anio_asignatura_anio_academico_id_asignatura_id_unique'
-        ");
+        // Schema::hasIndex es portable (antes se consultaba pg_indexes, solo PostgreSQL)
+        $indexExists = Schema::hasIndex('anio_asignatura', ['anio_academico_id', 'asignatura_id'], 'unique');
 
-        if (empty($indexExists)) {
+        if (! $indexExists) {
             Schema::table('anio_asignatura', function (Blueprint $table) {
                 $table->unique(['anio_academico_id', 'asignatura_id']);
             });
