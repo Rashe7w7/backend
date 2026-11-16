@@ -3,15 +3,18 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 
 class User extends Authenticatable
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
+    /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable, TwoFactorAuthenticatable;
 
     /**
@@ -23,7 +26,39 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'role',
+        'profesor_id',
     ];
+
+    public const ROLES = ['administrador', 'jefe_departamento', 'profesor', 'consulta'];
+
+    public function profesor(): BelongsTo
+    {
+        return $this->belongsTo(Profesor::class);
+    }
+
+    public function isAdministrator(): bool
+    {
+        return $this->role === 'administrador';
+    }
+
+    public function canWriteAcademicData(): bool
+    {
+        return in_array($this->role, ['administrador', 'jefe_departamento'], true);
+    }
+
+    public function departmentIds(): Collection
+    {
+        if (! $this->profesor_id) {
+            return collect();
+        }
+
+        return JefeDepartamento::query()
+            ->where('profesor_id', $this->profesor_id)
+            ->where('fecha_inicio', '<=', now())
+            ->where(fn ($query) => $query->whereNull('fecha_fin')->orWhere('fecha_fin', '>=', now()))
+            ->pluck('departamento_id');
+    }
 
     /**
      * The attributes that should be hidden for serialization.

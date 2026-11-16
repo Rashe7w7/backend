@@ -4,19 +4,8 @@
     <meta charset="UTF-8">
     <title>Indicadores | Sistema de Gestión</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        primary: '#f97316',
-                        'primary-dark': '#ea580c',
-                    }
-                }
-            }
-        }
-    </script>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
         [x-cloak] { display: none !important; }
         .fade-in { animation: fadeIn 0.3s ease-in-out; }
@@ -30,17 +19,10 @@
         }
     </style>
 </head>
-<body class="bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
+<body class="academic-ui bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
 
-<nav class="bg-white border-b-2 border-primary shadow-sm sticky top-0 z-50">
-    <div class="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
-        <div class="flex items-center gap-3">
-            
-            <h1 class="text-2xl font-bold text-gray-800">Indicadores</h1>
-        </div>
-        
-    </div>
-</nav>
+@include('partials.academic-nav')
+<div class="max-w-6xl mx-auto px-6 pt-8"><p class="eyebrow">Seguimiento del semestre</p><h1 class="text-3xl font-semibold mb-2">Indicadores académicos</h1><p class="text-gray-500 text-sm">Organiza tus indicadores y consulta los resultados de cada período.</p></div>
 
 <main class="max-w-6xl mx-auto p-4 md:p-6 space-y-6"> 
 
@@ -286,6 +268,12 @@
 
 <script>
 const API_BASE = '/api';
+const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+const jsonHeaders = {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+    'X-CSRF-TOKEN': csrfToken,
+};
 let indicadoresExistentes = [];
 let contadorId = 1;
 let categoriasIndicador = {};
@@ -304,7 +292,6 @@ document.addEventListener('DOMContentLoaded', function() {
     cargarCategorias().then(() => {
         cargarIndicadores();
     });
-    actualizarAvisoEspecificacion();
 });
 
 function mostrarToast(mensaje, tipo = 'success') {
@@ -351,7 +338,7 @@ function agregarCategoria() {
     // Enviar la categoría al servidor
     fetch(`${API_BASE}/categorias-indicador`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: jsonHeaders,
         body: JSON.stringify({ nombre: nuevaCategoria })
     }).then(async res => {
         const data = await res.json();
@@ -492,7 +479,7 @@ function crearIndicador() {
 
     fetch(`${API_BASE}/indicadores/create-and-assign`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: jsonHeaders,
         body: JSON.stringify(payload)
     }).then(async res => {
         const data = await res.json();
@@ -712,7 +699,6 @@ function agregarFilaVista(nombre, categoria, espec, cursoId = null) {
     `;
     tbody.appendChild(fila);
     actualizarContador();
-    actualizarAvisoEspecificacion();
     mostrarToast(`"${nombre}" añadido a la vista`);
 }
 
@@ -749,7 +735,6 @@ function eliminarFila(btn) {
         annoAcademicoTabla = null;
         document.getElementById('infoAnoAcademico').classList.add('hidden');
     }
-    actualizarAvisoEspecificacion();
 }
 
 // Actualizar contador
@@ -777,7 +762,6 @@ function limpiarVista() {
     annoAcademicoTabla = null; // Reiniciar el año académico
     document.getElementById('infoAnoAcademico').classList.add('hidden'); // Ocultar la información del año académico
     actualizarContador();
-    actualizarAvisoEspecificacion();
     mostrarToast('Vista limpiada');
 }
 
@@ -1026,7 +1010,10 @@ function eliminarIndicadorDB(id) {
     const indicador = indicadoresExistentes.find(ind => ind.id === id);
     if (!indicador) return;
     if (!confirm(`¿Estás seguro de eliminar "${indicador.nombre}" de la base de datos?`)) return;
-    fetch(`${API_BASE}/indicadores/${id}`, { method: 'DELETE' }).then(res => {
+    fetch(`${API_BASE}/indicadores/${id}`, {
+        method: 'DELETE',
+        headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+    }).then(res => {
         if (!res.ok) throw new Error('Error al eliminar');
         indicadoresExistentes = indicadoresExistentes.filter(ind => ind.id !== id);
         actualizarListaIndicadores();

@@ -6,9 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Sistema PPA - Alumnos Ayudantes</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="bg-white min-h-screen flex">
+<body class="academic-ui bg-white min-h-screen flex">
 
     <!-- ==================== SIDEBAR ==================== -->
     <aside class="w-60 bg-gray-100 p-6 min-h-screen border-r border-gray-300">

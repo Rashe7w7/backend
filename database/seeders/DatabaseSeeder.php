@@ -13,11 +13,19 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
+        if (app()->environment(['local', 'testing'])) {
+            User::factory()->withoutTwoFactor()->create([
+                'name' => 'Administrador',
+                'email' => env('APP_ADMIN_EMAIL', 'admin@example.com'),
+                'password' => env('APP_ADMIN_PASSWORD', 'password'),
+                'role' => 'administrador',
+            ]);
+        }
 
-        $this->call([
-            CursoAcademicoSeeder::class,
-            FakeDataSeeder::class,
-        ]);
+        $this->call(CursoAcademicoSeeder::class);
+
+        if (app()->environment(['local', 'testing'])) {
+            $this->call(FakeDataSeeder::class);
+        }
     }
 }

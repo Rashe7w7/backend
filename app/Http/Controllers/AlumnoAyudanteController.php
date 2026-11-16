@@ -5,9 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\Alumno;
 use App\Models\AlumnoAyudante;
 use App\Models\Asignatura;
-use App\Models\Profesor;
+use App\Models\CursoAcademico;
 use App\Models\Grupo;
-use App\Models\AnioAcademico;
+use App\Models\Profesor;
+use App\Models\ProfesorAsignatura;
 use Illuminate\Http\Request;
 
 class AlumnoAyudanteController extends Controller
@@ -18,14 +19,14 @@ class AlumnoAyudanteController extends Controller
         $asignaturas = Asignatura::all();
         $profesores = Profesor::all();
         $grupos = Grupo::all();
-        $cursosAcademicos = \App\Models\CursoAcademico::all();
-        
+        $cursosAcademicos = CursoAcademico::all();
+
         // Cargar los alumnos ayudantes con sus relaciones
         $alumnosAyudantes = AlumnoAyudante::with([
             'alumno',
             'profesorAsignatura.profesor',
             'profesorAsignatura.asignatura',
-            'cursoAcademico'
+            'cursoAcademico',
         ])->get();
 
         return view('tables.alumnoayudante', compact(
@@ -49,7 +50,7 @@ class AlumnoAyudanteController extends Controller
         AlumnoAyudante::create($request->only([
             'alumno_id',
             'profesor_asignatura_id',
-            'curso_academico_id'
+            'curso_academico_id',
         ]));
 
         return redirect()->route('alumnoayudante')->with('success', 'Alumno ayudante asignado correctamente');
@@ -57,56 +58,47 @@ class AlumnoAyudanteController extends Controller
 
     public function storeFromForm(Request $request)
     {
-        try {
-            // Log de los datos recibidos
-            \Log::info('Datos recibidos en alumnoayudante:', $request->all());
+        $validated = $request->validate([
+            'alumno_id' => ['required', 'integer', 'exists:estudiante,id'],
+            'grupo_id' => ['nullable', 'integer', 'exists:grupo,id'],
+            'asignatura_id' => ['required', 'integer', 'exists:asignatura,id'],
+            'profesor_id' => ['required', 'integer', 'exists:profesor,id'],
+            'curso_academico_id' => ['required', 'integer', 'exists:curso_academico,id'],
+        ]);
 
-            // Validar que el alumno existe
-            $alumno = Alumno::findOrFail($request->alumno_id);
-            
-            // Validar grupo si se proporciona
-            if ($request->grupo_id) {
-                $grupo = Grupo::findOrFail($request->grupo_id);
-            }
-            
-            // Obtener asignatura, profesor y curso académico
-            $asignatura = Asignatura::findOrFail($request->asignatura_id);
-            $profesor = Profesor::findOrFail($request->profesor_id);
-            $cursoAcademico = \App\Models\CursoAcademico::findOrFail($request->curso_academico_id);
+        $profesorAsignatura = ProfesorAsignatura::query()
+            ->where('profesor_id', $validated['profesor_id'])
+            ->where('asignatura_id', $validated['asignatura_id'])
+            ->where('curso_academico_id', $validated['curso_academico_id'])
+            ->first();
 
-            // VALIDAR que la relación profesor_asignatura EXISTE
-            $profesorAsignatura = \App\Models\ProfesorAsignatura::where('profesor_id', $profesor->id)
-                ->where('asignatura_id', $asignatura->id)
-                ->first();
-
-            if (!$profesorAsignatura) {
-                throw new \Exception("El profesor {$profesor->nombre} no dicta la asignatura {$asignatura->nombre}");
-            }
-                        // VALIDAR que no exista ya el mismo alumno como ayudante en esta asignatura y año
-            $existe = AlumnoAyudante::where('alumno_id', $alumno->id)
-                ->where('profesor_asignatura_id', $profesorAsignatura->id)
-                ->where('curso_academico_id', $request->curso_academico_id)
-                ->exists();
-
-            if ($existe) {
-                throw new \Exception("El alumno {$alumno->nombre} ya está registrado como ayudante en la asignatura {$asignatura->nombre} para el período {$cursoAcademico->nombre}");
-            }
-                        // Crear registro en estudiante_ayudante
-            $alumnoAyudante = AlumnoAyudante::create([
-                'alumno_id' => $alumno->id,
-                'profesor_asignatura_id' => $profesorAsignatura->id,
-                'curso_academico_id' => $request->curso_academico_id,
-            ]);
-
-            \Log::info('Alumno ayudante creado exitosamente:', ['id' => $alumnoAyudante->id]);
-            return response()->json(['success' => true, 'message' => 'Designación guardada correctamente', 'id' => $alumnoAyudante->id]);
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            \Log::error('Error ModelNotFoundException: ' . $e->getMessage());
-            return response()->json(['error' => 'Recurso no encontrado: ' . $e->getMessage()], 400);
-        } catch (\Exception $e) {
-            \Log::error('Error en storeFromForm: ' . $e->getMessage());
-            return response()->json(['error' => $e->getMessage()], 400);
+        if (! $profesorAsignatura) {
+            return response()->json([
+                'message' => 'El profesor no imparte esa asignatura en el curso seleccionado.',
+            ], 422);
         }
+
+        $existe = AlumnoAyudante::query()
+            ->where('alumno_id', $validated['alumno_id'])
+            ->where('profesor_asignatura_id', $profesorAsignatura->id)
+            ->where('curso_academico_id', $validated['curso_academico_id'])
+            ->exists();
+
+        if ($existe) {
+            return response()->json(['message' => 'La designación ya existe.'], 422);
+        }
+
+        $alumnoAyudante = AlumnoAyudante::create([
+            'alumno_id' => $validated['alumno_id'],
+            'profesor_asignatura_id' => $profesorAsignatura->id,
+            'curso_academico_id' => $validated['curso_academico_id'],
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Designación guardada correctamente',
+            'id' => $alumnoAyudante->id,
+        ], 201);
     }
 
     public function destroy($id)
@@ -119,12 +111,13 @@ class AlumnoAyudanteController extends Controller
             if (request()->wantsJson()) {
                 return response()->json(['success' => true, 'message' => 'Alumno ayudante eliminado correctamente']);
             }
-            
+
             return redirect()->route('alumnoayudante')->with('success', 'Alumno ayudante eliminado correctamente');
         } catch (\Exception $e) {
             if (request()->wantsJson()) {
-                return response()->json(['error' => $e->getMessage()], 400);
+                return response()->json(['error' => 'No se pudo eliminar la designación.'], 400);
             }
+
             return redirect()->route('alumnoayudante')->with('error', 'Error al eliminar');
         }
     }
@@ -147,6 +140,7 @@ class AlumnoAyudanteController extends Controller
     public function getAsignaturasByProfesor($profesorId)
     {
         $profesor = Profesor::with('asignaturas')->findOrFail($profesorId);
+
         return response()->json($profesor->asignaturas);
     }
 }

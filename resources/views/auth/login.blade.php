@@ -4,15 +4,16 @@
     <meta charset="UTF-8">
     <title>Agenda Semestral | Login</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="https://cdn.tailwindcss.com"></script>
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
         body {
-            background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+            background: #253e31;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
         
         .login-container {
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 24px 80px rgba(8, 27, 17, 0.25);
+            border: 1px solid #e1e7e1;
             backdrop-filter: blur(10px);
         }
         
@@ -29,7 +30,7 @@
         }
         
         .login-button {
-            background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+            background: #c45420;
             transition: all 0.3s ease;
             font-weight: 600;
             letter-spacing: 0.5px;
@@ -54,6 +55,7 @@
             
           
             <div class="text-center mb-8">
+                <p class="text-xs uppercase tracking-widest text-orange-700 font-semibold mb-4">Gestión académica</p>
                 <h1 class="text-3xl font-bold text-gray-800 mb-2">
                     Agenda Semestral
                 </h1>
@@ -61,8 +63,14 @@
             </div>
 
             <!-- Formulario -->
-            <form id="loginForm" class="space-y-5" method="POST" action="{{ route('login.post') }}">
+            <form id="loginForm" class="space-y-5" method="POST" action="{{ route('login.store') }}">
                 @csrf
+
+                @if ($errors->any())
+                    <div class="rounded-lg bg-red-50 p-3 text-sm text-red-700">
+                        {{ $errors->first() }}
+                    </div>
+                @endif
 
                 <!-- Correo -->
                 <div>
@@ -73,6 +81,7 @@
                         type="email"
                         id="email"
                         name="email"
+                        value="{{ old('email') }}"
                         required
                         class="input-field w-full px-4 py-3 rounded-lg text-gray-800 placeholder-gray-400 outline-none"
                         placeholder="correo@ejemplo.com"
@@ -101,7 +110,7 @@
                         <input type="checkbox" name="remember" class="w-4 h-4 rounded border-gray-300" />
                         <span class="ml-2 text-gray-600">Recuérdame</span>
                     </label>
-                    <a href="#" class="text-orange-500 hover:text-orange-600 font-medium">¿Olvidé contraseña?</a>
+                    <a href="{{ route('password.request') }}" class="text-orange-500 hover:text-orange-600 font-medium">¿Olvidé contraseña?</a>
                 </div>
 
                 <!-- Botón Login -->
@@ -122,8 +131,8 @@
 
             <!-- Registro -->
             <p class="text-center text-gray-600 text-sm">
-                ¿No tienes cuenta? 
-                <a href="#" class="text-orange-500 hover:text-orange-600 font-semibold">Regístrate aquí</a>
+                ¿Necesitas acceso?
+                <span class="text-gray-600">Contacta al administrador para obtener acceso.</span>
             </p>
         </div>
 

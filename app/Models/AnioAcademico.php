@@ -7,7 +7,9 @@ use Illuminate\Database\Eloquent\Model;
 class AnioAcademico extends Model
 {
     protected $table = 'anio_academico';
+
     protected $fillable = ['nombre', 'carrera_id'];
+
     public $timestamps = true;
 
     public function carrera()
@@ -32,12 +34,9 @@ class AnioAcademico extends Model
 
     public function bajas()
     {
-        return $this->hasManyThrough(
-            BajaEstudiante::class,
-            Alumno::class,
-            'grupo_id',
-            'alumno_id'
-        );
+        return BajaEstudiante::query()->whereHas('alumno.grupo', function ($query) {
+            $query->where('anio_academico_id', $this->getKey());
+        });
     }
 
     public function indicadores()
@@ -50,4 +49,3 @@ class AnioAcademico extends Model
         return $this->belongsToMany(Asignatura::class, 'anio_asignatura', 'anio_academico_id', 'asignatura_id');
     }
 }
-

@@ -3,24 +3,28 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Facultad;
-use App\Models\Departamento;
-use App\Models\Carrera;
-use App\Models\PlanEstudio;
-use App\Models\Disciplina;
-use App\Models\Asignatura;
-use App\Models\Curriculo;
-use App\Models\AnioAcademico;
-use App\Models\CursoAcademico;
-use App\Models\Grupo;
+use App\Http\Requests\CreateAndAssignIndicadorRequest;
+use App\Http\Requests\ListAlumnosRequest;
 use App\Models\Alumno;
+use App\Models\AnioAcademico;
+use App\Models\Asignatura;
+use App\Models\Carrera;
 use App\Models\CategoriaIndicador;
+use App\Models\Curriculo;
+use App\Models\CursoAcademico;
+use App\Models\Departamento;
+use App\Models\Disciplina;
+use App\Models\Facultad;
+use App\Models\Grupo;
 use App\Models\Indicador;
-use App\Models\IndicadorGrupo;
-use App\Models\IndicadorCarrera;
-use App\Models\IndicadorFacultad;
-use App\Models\IndicadorDepartamento;
 use App\Models\IndicadorAnio;
+use App\Models\IndicadorCarrera;
+use App\Models\IndicadorDepartamento;
+use App\Models\IndicadorFacultad;
+use App\Models\IndicadorGrupo;
+use App\Models\PlanEstudio;
+use App\Services\IndicadorService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class DataController extends Controller
@@ -33,8 +37,9 @@ class DataController extends Controller
 
     public function storeFacultad(Request $request)
     {
-        $validated = $request->validate(['nombre' => 'required|string|unique:facultades']);
+        $validated = $request->validate(['nombre' => 'required|string|unique:facultad,nombre']);
         $facultad = Facultad::create($validated);
+
         return response()->json($facultad, 201);
     }
 
@@ -48,9 +53,10 @@ class DataController extends Controller
     {
         $validated = $request->validate([
             'nombre' => 'required|string',
-            'facultad_id' => 'required|exists:facultades,id'
+            'facultad_id' => 'required|exists:facultad,id',
         ]);
         $departamento = Departamento::create($validated);
+
         return response()->json($departamento, 201);
     }
 
@@ -60,10 +66,12 @@ class DataController extends Controller
         try {
             $carreras = Carrera::all();
             \Log::info('Carreras obtenidas:', ['count' => count($carreras)]);
+
             return response()->json($carreras);
         } catch (\Exception $e) {
             \Log::error('Error obteniendo carreras:', ['error' => $e->getMessage()]);
-            return response()->json(['error' => $e->getMessage()], 500);
+
+            return response()->json(['error' => 'No se pudieron obtener las carreras.'], 500);
         }
     }
 
@@ -71,9 +79,10 @@ class DataController extends Controller
     {
         $validated = $request->validate([
             'nombre' => 'required|string',
-            'facultad_id' => 'required|exists:facultades,id'
+            'facultad_id' => 'required|exists:facultad,id',
         ]);
         $carrera = Carrera::create($validated);
+
         return response()->json($carrera, 201);
     }
 
@@ -90,7 +99,7 @@ class DataController extends Controller
                 ->with('carrera')
                 ->orderBy('nombre')
                 ->get()
-                ->map(function($plan) {
+                ->map(function ($plan) {
                     return [
                         'id' => $plan->id,
                         'nombre' => $plan->nombre,
@@ -99,13 +108,13 @@ class DataController extends Controller
                         'fecha_fin' => $plan->fecha_fin,
                         'vigente' => $plan->vigente,
                         'anio_vigencia' => $plan->fecha_inicio ? $plan->fecha_inicio->year : null,
-                        'carrera' => $plan->carrera
+                        'carrera' => $plan->carrera,
                     ];
                 });
-            
+
             return response()->json($planes);
         } catch (\Exception $e) {
-            return response()->json(['error' => $e->getMessage()], 500);
+            return response()->json(['error' => 'No se pudieron obtener los planes de estudio.'], 500);
         }
     }
 
@@ -113,12 +122,13 @@ class DataController extends Controller
     {
         $validated = $request->validate([
             'nombre' => 'required|string',
-            'carrera_id' => 'required|exists:carreras,id',
+            'carrera_id' => 'required|exists:carrera,id',
             'fecha_inicio' => 'required|date',
             'fecha_fin' => 'nullable|date',
-            'vigente' => 'boolean'
+            'vigente' => 'boolean',
         ]);
         $plan = PlanEstudio::create($validated);
+
         return response()->json($plan, 201);
     }
 
@@ -128,7 +138,7 @@ class DataController extends Controller
         $query = Disciplina::with([
             'planEstudio' => function ($query) {
                 $query->with('carrera');
-            }
+            },
         ]);
 
         // Filtrar por plan_estudio_id si se proporciona
@@ -143,9 +153,10 @@ class DataController extends Controller
     {
         $validated = $request->validate([
             'nombre' => 'required|string',
-            'plan_estudio_id' => 'required|exists:planes_estudio,id'
+            'plan_estudio_id' => 'required|exists:plan_estudio,id',
         ]);
         $disciplina = Disciplina::create($validated);
+
         return response()->json($disciplina, 201);
     }
 
@@ -156,7 +167,7 @@ class DataController extends Controller
             'disciplina' => function ($query) {
                 $query->with('planEstudio.carrera');
             },
-            'aniosAcademicos'
+            'aniosAcademicos',
         ]);
 
         // Filtrar por plan_estudio_id si se proporciona
@@ -189,11 +200,11 @@ class DataController extends Controller
                         'nombre' => $asignatura->disciplina->planEstudio->nombre,
                         'carrera' => $asignatura->disciplina->planEstudio->carrera ? [
                             'id' => $asignatura->disciplina->planEstudio->carrera->id,
-                            'nombre' => $asignatura->disciplina->planEstudio->carrera->nombre
-                        ] : null
-                    ] : null
+                            'nombre' => $asignatura->disciplina->planEstudio->carrera->nombre,
+                        ] : null,
+                    ] : null,
                 ] : null,
-                'ano' => $asignatura->aniosAcademicos->first()?->nombre ?? 'Sin Año'
+                'ano' => $asignatura->aniosAcademicos->first()?->nombre ?? 'Sin Año',
             ];
         }));
     }
@@ -202,9 +213,10 @@ class DataController extends Controller
     {
         $validated = $request->validate([
             'nombre' => 'required|string',
-            'disciplina_id' => 'required|exists:disciplinas,id'
+            'disciplina_id' => 'required|exists:disciplina,id',
         ]);
         $asignatura = Asignatura::create($validated);
+
         return response()->json($asignatura, 201);
     }
 
@@ -218,9 +230,10 @@ class DataController extends Controller
     {
         $validated = $request->validate([
             'nombre' => 'required|string',
-            'asignatura_id' => 'required|exists:asignaturas,id'
+            'asignatura_id' => 'required|exists:asignatura,id',
         ]);
         $curriculo = Curriculo::create($validated);
+
         return response()->json($curriculo, 201);
     }
 
@@ -239,10 +252,11 @@ class DataController extends Controller
     public function storeAnioAcademico(Request $request)
     {
         $validated = $request->validate([
-            'nombre' => 'required|string|unique:anios_academicos',
-            'carrera_id' => 'required|exists:carreras,id'
+            'nombre' => 'required|string|unique:anio_academico,nombre',
+            'carrera_id' => 'required|exists:carrera,id',
         ]);
         $anio = AnioAcademico::create($validated);
+
         return response()->json($anio, 201);
     }
 
@@ -256,26 +270,43 @@ class DataController extends Controller
     {
         $validated = $request->validate([
             'nombre' => 'required|string',
-            'anio_academico_id' => 'required|exists:anios_academicos,id'
+            'anio_academico_id' => 'required|exists:anio_academico,id',
         ]);
         $grupo = Grupo::create($validated);
+
         return response()->json($grupo, 201);
     }
 
     // Alumnos
-    public function getAlumnos()
+    public function getAlumnos(ListAlumnosRequest $request): JsonResponse
     {
-        return response()->json(Alumno::all());
+        $validated = $request->validated();
+
+        $query = Alumno::query()->with('grupo');
+
+        $query->when($request->integer('grupo_id'), fn ($q, $id) => $q->where('grupo_id', $id));
+        $query->when($request->integer('carrera_id'), function ($q, $id) {
+            $q->whereHas('grupo.anioAcademico', fn ($year) => $year->where('carrera_id', $id));
+        });
+        $query->when($request->string('search')->toString(), function ($q, $search) {
+            $q->where(fn ($student) => $student
+                ->whereLike('nombre', "%{$search}%")
+                ->orWhereLike('identificador_institucional', "%{$search}%"));
+        });
+
+        return response()->json($query->orderBy('nombre')->paginate($validated['per_page'] ?? 50)->withQueryString());
     }
 
     public function storeAlumno(Request $request)
     {
         $validated = $request->validate([
             'nombre' => 'required|string',
-            'email' => 'nullable|email|unique:alumnos',
-            'grupo_id' => 'required|exists:grupos,id'
+            'identificador_institucional' => 'nullable|string|max:100|unique:estudiante,identificador_institucional',
+            'email' => 'nullable|email|unique:estudiante,email',
+            'grupo_id' => 'required|exists:grupo,id',
         ]);
         $alumno = Alumno::create($validated);
+
         return response()->json($alumno, 201);
     }
 
@@ -289,6 +320,7 @@ class DataController extends Controller
     {
         $validated = $request->validate(['nombre' => 'required|string|unique:categoria_indicador']);
         $categoria = CategoriaIndicador::create($validated);
+
         return response()->json($categoria, 201);
     }
 
@@ -297,7 +329,7 @@ class DataController extends Controller
     {
         try {
             $result = collect();
-            
+
             // Cargar indicadores de carrera
             $carrera = IndicadorCarrera::with('indicador.categoria')->get()->map(function ($ic) {
                 return [
@@ -310,7 +342,7 @@ class DataController extends Controller
                 ];
             });
             $result = $result->concat($carrera);
-            
+
             // Cargar indicadores de grupo
             $grupo = IndicadorGrupo::with('indicador.categoria')->get()->map(function ($ig) {
                 return [
@@ -323,7 +355,7 @@ class DataController extends Controller
                 ];
             });
             $result = $result->concat($grupo);
-            
+
             // Cargar indicadores de facultad
             $facultad = IndicadorFacultad::with('indicador.categoria')->get()->map(function ($if) {
                 return [
@@ -336,7 +368,7 @@ class DataController extends Controller
                 ];
             });
             $result = $result->concat($facultad);
-            
+
             // Cargar indicadores de departamento
             $departamento = IndicadorDepartamento::with('indicador.categoria')->get()->map(function ($id) {
                 return [
@@ -349,7 +381,7 @@ class DataController extends Controller
                 ];
             });
             $result = $result->concat($departamento);
-            
+
             // Cargar indicadores de año académico
             $anno = IndicadorAnio::with('indicador.categoria')->get()->map(function ($ia) {
                 return [
@@ -362,14 +394,15 @@ class DataController extends Controller
                 ];
             });
             $result = $result->concat($anno);
-            
+
             // Eliminar duplicados (mismo indicador puede estar en múltiples especificaciones)
             $result = $result->unique('id')->values();
-            
+
             return response()->json($result);
         } catch (\Exception $e) {
-            \Log::error('Error en getIndicadores: ' . $e->getMessage());
-            return response()->json(['error' => $e->getMessage()], 500);
+            \Log::error('Error en getIndicadores: '.$e->getMessage());
+
+            return response()->json(['error' => 'No se pudieron obtener los indicadores.'], 500);
         }
     }
 
@@ -378,8 +411,8 @@ class DataController extends Controller
         // Crear solo el indicador padre; la asignación a entidad específica
         // se hará en pasos posteriores cuando el usuario seleccione destino
         $validated = $request->validate([
-            'nombre' => 'required|string',
-            'especificacion' => 'required|string|in:grupo,facultad,departamento,carrera,anno'
+            'nombre' => 'required|string|unique:indicador,nombre',
+            'especificacion' => 'required|string|in:grupo,facultad,departamento,carrera,anno',
         ]);
 
         $indicador = Indicador::create(['nombre' => $validated['nombre']]);
@@ -394,11 +427,12 @@ class DataController extends Controller
     {
         // Eliminar el indicador padre; relaciones hijas se eliminarán por cascada si están configuradas
         $indicador = Indicador::find($id);
-        if (!$indicador) {
+        if (! $indicador) {
             return response()->json(['error' => 'Indicador no encontrado'], 404);
         }
 
         $indicador->delete();
+
         return response()->json(['message' => 'Indicador eliminado correctamente'], 200);
     }
 
@@ -445,154 +479,19 @@ class DataController extends Controller
             return response()->json($exists, 200);
         }
 
+        $validated['nombre'] = Indicador::findOrFail($validated['indicador_id'])->nombre;
         $row = IndicadorCarrera::create($validated);
+
         return response()->json($row, 201);
     }
 
     /**
      * Crear indicador y asignarlo a su especificación en un solo paso
      */
-    public function createAndAssignIndicador(Request $request)
+    public function createAndAssignIndicador(CreateAndAssignIndicadorRequest $request, IndicadorService $service): JsonResponse
     {
-        $validated = $request->validate([
-            'nombre' => 'required|string',
-            'categoria_indicador' => 'required|integer|exists:categoria_indicador,id',
-            'especificacion' => 'required|string|in:grupo,facultad,departamento,carrera,anno',
-            'curso_academico_id' => 'nullable|integer|exists:curso_academico,id',
-            'carrera_id' => 'nullable|integer|exists:carrera,id',
-            'grupo_id' => 'nullable|integer|exists:grupo,id',
-            'facultad_id' => 'nullable|integer|exists:facultad,id',
-            'departamento_id' => 'nullable|integer|exists:departamento,id',
-            'anio_academico_id' => 'nullable|integer|exists:anio_academico,id',
-        ]);
+        $indicador = $service->createAndAssign($request->validated());
 
-        // Crear o conseguir indicador padre
-        $indicador = Indicador::firstOrCreate(
-            ['nombre' => $validated['nombre']],
-            ['categoria_indicador_id' => $validated['categoria_indicador']]
-        );
-
-        // Asignar según especificación
-        switch ($validated['especificacion']) {
-            case 'carrera':
-                if (!isset($validated['carrera_id'], $validated['curso_academico_id'])) {
-                    return response()->json(['error' => 'carrera_id y curso_academico_id requeridos'], 422);
-                }
-                $exists = IndicadorCarrera::where('indicador_id', $indicador->id)
-                    ->where('carrera_id', $validated['carrera_id'])
-                    ->where('curso_academico_id', $validated['curso_academico_id'])
-                    ->first();
-                if ($exists) {
-                    return response()->json(['error' => 'Este indicador ya existe para esta carrera en este curso'], 409);
-                }
-                IndicadorCarrera::create([
-                    'nombre' => $validated['nombre'],
-                    'indicador_id' => $indicador->id,
-                    'carrera_id' => $validated['carrera_id'],
-                    'curso_academico_id' => $validated['curso_academico_id'],
-                ]);
-                break;
-            case 'grupo':
-                if (!isset($validated['grupo_id'], $validated['curso_academico_id'])) {
-                    return response()->json(['error' => 'grupo_id y curso_academico_id requeridos'], 422);
-                }
-                $exists = IndicadorGrupo::where('indicador_id', $indicador->id)
-                    ->where('grupo_id', $validated['grupo_id'])
-                    ->where('curso_academico_id', $validated['curso_academico_id'])
-                    ->first();
-                if ($exists) {
-                    return response()->json(['error' => 'Este indicador ya existe para este grupo en este curso'], 409);
-                }
-                IndicadorGrupo::create([
-                    'nombre' => $validated['nombre'],
-                    'indicador_id' => $indicador->id,
-                    'grupo_id' => $validated['grupo_id'],
-                    'curso_academico_id' => $validated['curso_academico_id'],
-                ]);
-                break;
-            case 'facultad':
-                if (!isset($validated['facultad_id'])) {
-                    return response()->json(['error' => 'facultad_id requerido'], 422);
-                }
-                $exists = IndicadorFacultad::where('indicador_id', $indicador->id)
-                    ->where('facultad_id', $validated['facultad_id'])
-                    ->first();
-                if ($exists) {
-                    return response()->json(['error' => 'Este indicador ya existe para esta facultad'], 409);
-                }
-                IndicadorFacultad::create([
-                    'nombre' => $validated['nombre'],
-                    'indicador_id' => $indicador->id,
-                    'facultad_id' => $validated['facultad_id'],
-                ]);
-                break;
-            case 'departamento':
-                if (!isset($validated['departamento_id'], $validated['curso_academico_id'])) {
-                    return response()->json(['error' => 'departamento_id y curso_academico_id requeridos'], 422);
-                }
-                $exists = IndicadorDepartamento::where('indicador_id', $indicador->id)
-                    ->where('departamento_id', $validated['departamento_id'])
-                    ->where('curso_academico_id', $validated['curso_academico_id'])
-                    ->first();
-                if ($exists) {
-                    return response()->json(['error' => 'Este indicador ya existe para este departamento en este curso'], 409);
-                }
-                IndicadorDepartamento::create([
-                    'nombre' => $validated['nombre'],
-                    'indicador_id' => $indicador->id,
-                    'departamento_id' => $validated['departamento_id'],
-                    'curso_academico_id' => $validated['curso_academico_id'],
-                ]);
-                break;
-            case 'anno':
-                if (!isset($validated['anio_academico_id'], $validated['curso_academico_id'])) {
-                    return response()->json(['error' => 'anio_academico_id y curso_academico_id requeridos'], 422);
-                }
-                $exists = IndicadorAnio::where('indicador_id', $indicador->id)
-                    ->where('anio_academico_id', $validated['anio_academico_id'])
-                    ->where('curso_academico_id', $validated['curso_academico_id'])
-                    ->first();
-                if ($exists) {
-                    return response()->json(['error' => 'Este indicador ya existe para este año en este curso'], 409);
-                }
-                IndicadorAnio::create([
-                    'nombre' => $validated['nombre'],
-                    'indicador_id' => $indicador->id,
-                    'anio_academico_id' => $validated['anio_academico_id'],
-                    'curso_academico_id' => $validated['curso_academico_id'],
-                ]);
-                break;
-        }
-
-        // Devolver indicador con especificación para que el frontend sepa cómo se creó
-        $response = $indicador->toArray();
-        $response['especificacion'] = $validated['especificacion'];
-        return response()->json($response, 201);
-    }
-
-    // Genérico - obtener datos de cualquier tabla
-    public function getTableData($table)
-    {
-        $models = [
-            'facultades' => Facultad::class,
-            'departamentos' => Departamento::class,
-            'carreras' => Carrera::class,
-            'planes_estudio' => PlanEstudio::class,
-            'disciplinas' => Disciplina::class,
-            'asignaturas' => Asignatura::class,
-            'curriculos' => Curriculo::class,
-            'anios_academicos' => AnioAcademico::class,
-            'grupos' => Grupo::class,
-            'alumnos' => Alumno::class,
-            'categorias_indicador' => CategoriaIndicador::class,
-            'indicadores' => Indicador::class,
-        ];
-
-        if (!isset($models[$table])) {
-            return response()->json(['error' => 'Tabla no encontrada'], 404);
-        }
-
-        $model = $models[$table];
-        return response()->json($model::all());
+        return response()->json($indicador, 201);
     }
 }

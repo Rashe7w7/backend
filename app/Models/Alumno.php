@@ -10,7 +10,9 @@ class Alumno extends Model
     use SoftDeletes;
 
     protected $table = 'estudiante';
-    protected $fillable = ['nombre', 'email', 'grupo_id', 'carrera'];
+
+    protected $fillable = ['identificador_institucional', 'nombre', 'email', 'grupo_id', 'carrera'];
+
     public $timestamps = true;
 
     public function grupo()
@@ -25,6 +27,6 @@ class Alumno extends Model
 
     public function alumnoAyudante()
     {
-        return $this->hasMany(EstudianteAyudante::class, 'alumno_id');
+        return $this->hasMany(AlumnoAyudante::class, 'alumno_id');
     }
 }

@@ -1,8 +1,12 @@
 <?php
 
+use App\Http\Middleware\EnsureDepartmentScope;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Middleware\HandleCors;
+use Illuminate\Http\Request;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -12,10 +16,21 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->alias([
+            'department.scope' => EnsureDepartmentScope::class,
+        ]);
         $middleware->api(prepend: [
-            \Illuminate\Http\Middleware\HandleCors::class,
+            HandleCors::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        $exceptions->render(function (QueryException $exception, Request $request) {
+            if ($request->is('api/*')) {
+                report($exception);
+
+                return response()->json([
+                    'message' => 'No se pudo completar la operación solicitada.',
+                ], 500);
+            }
+        });
     })->create();

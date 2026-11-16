@@ -22,7 +22,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('indicadores', function (Blueprint $table) {
+        Schema::table('indicador', function (Blueprint $table) {
             $table->unique(['nombre']);
         });
     }

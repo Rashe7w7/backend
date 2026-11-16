@@ -10,10 +10,10 @@ return new class extends Migration
     {
         Schema::table('asignatura', function (Blueprint $table) {
             // Agregar columnas si no existen
-            if (!Schema::hasColumn('asignatura', 'codigo')) {
+            if (! Schema::hasColumn('asignatura', 'codigo')) {
                 $table->string('codigo')->nullable()->unique();
             }
-            if (!Schema::hasColumn('asignatura', 'horas')) {
+            if (! Schema::hasColumn('asignatura', 'horas')) {
                 $table->integer('horas')->nullable();
             }
         });
@@ -22,6 +22,9 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('asignatura', function (Blueprint $table) {
+            if (Schema::hasColumn('asignatura', 'codigo')) {
+                $table->dropUnique(['codigo']);
+            }
             $table->dropColumn(['codigo', 'horas']);
         });
     }
