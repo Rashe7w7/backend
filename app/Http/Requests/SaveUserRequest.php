@@ -28,7 +28,7 @@ class SaveUserRequest extends FormRequest
         $roleRules = [
             'role' => ['required', Rule::in(User::ROLES)],
             'profesor_id' => [
-                Rule::requiredIf(in_array($this->input('role'), ['profesor', 'jefe_departamento'], true)),
+                Rule::requiredIf($this->input('role') === 'jefe_departamento'),
                 'nullable',
                 'integer',
                 'exists:profesor,id',
@@ -51,7 +51,7 @@ class SaveUserRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'profesor_id.required' => 'Los roles de profesor y jefe deben vincularse con un profesor.',
+            'profesor_id.required' => 'El Jefe de Departamento debe vincularse con un profesor.',
             'profesor_id.unique' => 'Ese profesor ya está vinculado con otra cuenta.',
             'role.in' => 'El rol seleccionado no es válido.',
         ];

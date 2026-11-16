@@ -13,6 +13,8 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        $this->call(RoleSeeder::class);
+
         if (app()->environment(['local', 'testing'])) {
             User::factory()->withoutTwoFactor()->create([
                 'name' => 'Administrador',
@@ -20,6 +22,8 @@ class DatabaseSeeder extends Seeder
                 'password' => env('APP_ADMIN_PASSWORD', 'password'),
                 'role' => 'administrador',
             ]);
+
+            $this->call(RoleSeeder::class);
         }
 
         $this->call(CursoAcademicoSeeder::class);

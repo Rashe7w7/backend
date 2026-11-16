@@ -3,21 +3,23 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class AnioAcademico extends Model
 {
     protected $table = 'anio_academico';
 
-    protected $fillable = ['nombre', 'carrera_id'];
+    protected $fillable = ['nombre', 'carrera_id', 'nivel'];
 
     public $timestamps = true;
 
-    public function carrera()
+    public function carrera(): BelongsTo
     {
         return $this->belongsTo(Carrera::class, 'carrera_id');
     }
 
-    public function grupos()
+    public function grupos(): HasMany
     {
         return $this->hasMany(Grupo::class, 'anio_academico_id');
     }

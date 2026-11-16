@@ -26,6 +26,8 @@ use App\Models\PlanEstudio;
 use App\Services\IndicadorService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class DataController extends Controller
 {
@@ -80,6 +82,7 @@ class DataController extends Controller
         $validated = $request->validate([
             'nombre' => 'required|string',
             'facultad_id' => 'required|exists:facultad,id',
+            'duracion_anios' => 'required|integer|between:1,5',
         ]);
         $carrera = Carrera::create($validated);
 
@@ -244,26 +247,44 @@ class DataController extends Controller
     }
 
     // Función para obtener verdaderos años académicos (1er año, 2do año, etc.)
-    public function getYearsAcademicos()
+    public function getYearsAcademicos(Request $request)
     {
-        return response()->json(AnioAcademico::all());
+        return response()->json(AnioAcademico::query()
+            ->with('carrera:id,nombre,duracion_anios')
+            ->when($request->integer('carrera_id'), fn ($query, $id) => $query->where('carrera_id', $id))
+            ->orderBy('nivel')
+            ->get());
     }
 
     public function storeAnioAcademico(Request $request)
     {
         $validated = $request->validate([
-            'nombre' => 'required|string|unique:anio_academico,nombre',
+            'nombre' => ['required', 'string'],
             'carrera_id' => 'required|exists:carrera,id',
+            'nivel' => [
+                'required', 'integer', 'between:1,5',
+                Rule::unique('anio_academico', 'nivel')->where('carrera_id', $request->integer('carrera_id')),
+            ],
         ]);
+        $duration = Carrera::query()->whereKey($validated['carrera_id'])->value('duracion_anios');
+        if ($duration !== null && $validated['nivel'] > $duration) {
+            throw ValidationException::withMessages(['nivel' => 'El nivel supera la duración registrada de la carrera.']);
+        }
         $anio = AnioAcademico::create($validated);
 
         return response()->json($anio, 201);
     }
 
     // Grupos
-    public function getGrupos()
+    public function getGrupos(Request $request)
     {
-        return response()->json(Grupo::all());
+        return response()->json(Grupo::query()
+            ->with(['anioAcademico.carrera:id,nombre,facultad_id', 'cursoAcademico:id,nombre'])
+            ->when($request->integer('carrera_id'), fn ($query, $id) => $query->whereHas('anioAcademico', fn ($year) => $year->where('carrera_id', $id)))
+            ->when($request->integer('anio_academico_id'), fn ($query, $id) => $query->where('anio_academico_id', $id))
+            ->when($request->integer('curso_academico_id'), fn ($query, $id) => $query->where('curso_academico_id', $id))
+            ->get()
+            ->append('nombre_academico'));
     }
 
     public function storeGrupo(Request $request)
@@ -271,6 +292,7 @@ class DataController extends Controller
         $validated = $request->validate([
             'nombre' => 'required|string',
             'anio_academico_id' => 'required|exists:anio_academico,id',
+            'curso_academico_id' => 'required|exists:curso_academico,id',
         ]);
         $grupo = Grupo::create($validated);
 

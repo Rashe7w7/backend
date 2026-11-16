@@ -49,6 +49,26 @@
                 </tbody>
             </table>
         </section>
+
+        <section class="rounded-xl border bg-white p-6 shadow-sm">
+            <h2 class="mb-2 text-lg font-semibold">Alcances académicos explícitos</h2>
+            <p class="mb-4 text-sm text-gray-500">Asigna el ámbito de Decano, Rector, Vicerrector o Secretaria. Para Secretaria, habilita expresamente la exportación.</p>
+            @foreach($users as $scopeUser)
+                @if(in_array($scopeUser->role, ['decano', 'rector', 'vicerrector', 'secretaria'], true))
+                    <div class="mb-4 rounded-lg border p-4">
+                        <strong>{{ $scopeUser->name }} · {{ str($scopeUser->role)->replace('_', ' ')->title() }}</strong>
+                        <form method="POST" action="{{ route('roles.scopes.store', $scopeUser) }}" class="mt-3 grid gap-2 md:grid-cols-4">
+                            @csrf
+                            <select name="ambito_tipo" class="rounded border p-2"><option value="facultad">Facultad</option><option value="departamento">Departamento</option><option value="carrera">Carrera</option><option value="anno">Año académico</option><option value="grupo">Grupo</option></select>
+                            <input name="ambito_id" type="number" min="1" class="rounded border p-2" placeholder="ID de la entidad" required>
+                            <select name="puede_exportar" class="rounded border p-2"><option value="0">Sin exportación</option><option value="1">Puede preparar CSV</option></select>
+                            <button class="rounded bg-gray-900 px-3 py-2 text-white">Asignar alcance</button>
+                        </form>
+                        <div class="mt-3 flex flex-wrap gap-2">@foreach($scopeUser->alcancesAcademicos as $scope)<form method="POST" action="{{ route('roles.scopes.destroy', [$scopeUser, $scope]) }}">@csrf @method('DELETE')<button class="rounded-full bg-gray-100 px-3 py-1 text-sm">{{ $scope->ambito_tipo }} #{{ $scope->ambito_id }}{{ $scope->puede_exportar ? ' · CSV' : '' }} ×</button></form>@endforeach</div>
+                    </div>
+                @endif
+            @endforeach
+        </section>
     </main>
 </body>
 </html>

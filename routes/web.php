@@ -1,11 +1,13 @@
 <?php
 
 use App\Http\Controllers\AlumnoAyudanteController;
+use App\Http\Controllers\AuditController;
 use App\Http\Controllers\BajasController;
 use App\Http\Controllers\CategoriaController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ImportController;
 use App\Http\Controllers\IndicadorController;
+use App\Http\Controllers\PpaController;
 use App\Http\Controllers\ReportExportController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Auth;
@@ -25,17 +27,29 @@ Route::middleware('auth')->group(function () {
         ->middleware('can:manage-users')->name('roles.store');
     Route::put('/roles/{user}', [UserController::class, 'update'])
         ->middleware('can:manage-users')->name('roles.update');
+    Route::post('/roles/{user}/alcances', [UserController::class, 'storeScope'])
+        ->middleware('can:manage-users')->name('roles.scopes.store');
+    Route::delete('/roles/{user}/alcances/{scope}', [UserController::class, 'destroyScope'])
+        ->middleware('can:manage-users')->name('roles.scopes.destroy');
     Route::view('/profesor', 'tables.profesor')->name('profesor');
     Route::view('/planestudio', 'tables.planestudio')->name('planestudio');
+
+    Route::get('/profesores-principales', [PpaController::class, 'index'])->name('ppa.index');
+    Route::post('/profesores-principales', [PpaController::class, 'store'])->name('ppa.store');
+    Route::get('/profesores-principales/{asignacionPpa}/estudiantes', [PpaController::class, 'students'])->name('ppa.students');
 
     Route::get('/alumnoayudante', [AlumnoAyudanteController::class, 'index'])->name('alumnoayudante');
 
     Route::get('/indicadores', [IndicadorController::class, 'index'])->name('indicadores');
-    Route::post('/indicadores', [IndicadorController::class, 'store'])->middleware('can:manage-users')->name('indicadores.store');
+    Route::post('/indicadores', [IndicadorController::class, 'store'])->middleware('can:create-indicators')->name('indicadores.store');
+    Route::post('/indicadores/aplicaciones', [IndicadorController::class, 'apply'])->name('indicadores.apply');
+    Route::delete('/indicadores/aplicaciones/{type}/{application}', [IndicadorController::class, 'destroyApplication'])->name('indicadores.applications.destroy');
+    Route::post('/indicadores/preparar-csv', [ReportExportController::class, 'csv'])->name('indicadores.csv');
     Route::post('/valores', [IndicadorController::class, 'storeValores'])->middleware('can:manage-users')->name('valores.store');
     Route::get('/indicadores/bajas', [BajasController::class, 'index'])->name('indicadores.bajas');
     Route::get('/informes/indicadores/excel', [ReportExportController::class, 'excel'])->name('reports.indicadores.excel');
     Route::get('/informes/indicadores/pdf', [ReportExportController::class, 'pdf'])->name('reports.indicadores.pdf');
+    Route::get('/auditoria', AuditController::class)->middleware('can:view-audit')->name('audit.index');
 
     Route::middleware(['can:manage-users'])->group(function () {
         Route::get('/importar', [ImportController::class, 'index'])->name('imports.index');

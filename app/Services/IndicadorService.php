@@ -8,6 +8,7 @@ use App\Models\IndicadorCarrera;
 use App\Models\IndicadorDepartamento;
 use App\Models\IndicadorFacultad;
 use App\Models\IndicadorGrupo;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -56,5 +57,27 @@ class IndicadorService
 
             return $indicador;
         });
+    }
+
+    /** @param array{especificacion:string,entidad_id:int,curso_academico_id?:int|null} $data */
+    public function apply(Indicador $indicador, array $data): Model
+    {
+        [$model, $entityKey] = self::ASSIGNMENTS[$data['especificacion']];
+        $attributes = [
+            'indicador_id' => $indicador->id,
+            $entityKey => $data['entidad_id'],
+        ];
+
+        if ($data['especificacion'] !== 'facultad') {
+            $attributes['curso_academico_id'] = $data['curso_academico_id'];
+        }
+
+        if ($model::query()->where($attributes)->exists()) {
+            throw ValidationException::withMessages([
+                'indicador_id' => 'El indicador ya está aplicado a esa entidad y curso.',
+            ]);
+        }
+
+        return DB::transaction(fn () => $model::query()->create($attributes + ['nombre' => $indicador->nombre]));
     }
 }

@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreIndicatorApplicationRequest;
+use App\Http\Requests\StoreIndicatorDefinitionRequest;
 use App\Models\Carrera;
 use App\Models\CursoAcademico;
 use App\Models\Indicador;
@@ -11,117 +13,90 @@ use App\Models\IndicadorDepartamento;
 use App\Models\IndicadorFacultad;
 use App\Models\IndicadorGrupo;
 use App\Models\IndicadorValor;
+use App\Services\AcademicScopeService;
+use App\Services\AuditService;
+use App\Services\IndicadorService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
+use Illuminate\View\View;
 
 class IndicadorController extends Controller
 {
-    public function index()
+    public function index(Request $request, AcademicScopeService $scopeService): View
     {
         // Cargar solo lo necesario; categoría es decorativa y no se persiste
-        $indicadores = Indicador::all();
+        $indicadores = Indicador::query()->with('categoria')->orderBy('nombre')->get();
         $cursosAcademicos = CursoAcademico::all();
 
         // Entidades relacionadas para selección
         $carreras = Carrera::all();
 
-        return view('indicadores', compact('indicadores', 'cursosAcademicos', 'carreras'));
+        $applications = collect([
+            ...IndicadorGrupo::query()->with(['indicador.categoria', 'grupo.anioAcademico.carrera'])->get(),
+            ...IndicadorDepartamento::query()->with(['indicador.categoria', 'departamento'])->get(),
+            ...IndicadorCarrera::query()->with(['indicador.categoria', 'carrera'])->get(),
+            ...IndicadorAnio::query()->with(['indicador.categoria', 'anioAcademico.carrera'])->get(),
+            ...IndicadorFacultad::query()->with(['indicador.categoria', 'facultad'])->get(),
+        ])->filter(function ($application) use ($request, $scopeService): bool {
+            [$type, $entityId] = match (true) {
+                $application instanceof IndicadorGrupo => ['grupo', $application->grupo_id],
+                $application instanceof IndicadorDepartamento => ['departamento', $application->departamento_id],
+                $application instanceof IndicadorCarrera => ['carrera', $application->carrera_id],
+                $application instanceof IndicadorAnio => ['anno', $application->anio_academico_id],
+                default => ['facultad', $application->facultad_id],
+            };
+
+            return $entityId !== null && $scopeService->canAccess($request->user(), $type, (int) $entityId);
+        });
+
+        $applicationEntities = $scopeService->entityOptions($request->user());
+        $exportEntities = $scopeService->entityOptions($request->user(), true);
+
+        return view('indicadores', compact('indicadores', 'cursosAcademicos', 'carreras', 'applications', 'applicationEntities', 'exportEntities'));
     }
 
-    public function store(Request $request)
+    public function store(StoreIndicatorDefinitionRequest $request, AuditService $audit): RedirectResponse
     {
-        // Procesar múltiples indicadores enviados desde el formulario dinámico
-        if ($request->has('indicadores') && is_array($request->indicadores)) {
-            // Validar todo primero (sin categoría; es decorativa)
-            // Agregamos unique para evitar duplicados en la validación
-            $request->validate([
-                'indicadores.*.nombre' => 'required|string|max:255|unique:indicador,nombre',
-                'indicadores.*.especificacion' => 'required|string|in:grupo,facultad,departamento,carrera,anno,general',
-            ]);
+        $indicador = Indicador::query()->create($request->validated());
+        $audit->recordModel('indicador.creado', $indicador);
 
-            $cursoAcademicoId = $request->input('curso_academico_id');
+        return redirect()->route('indicadores')->with('success', 'Indicador creado exitosamente.');
+    }
 
-            // Luego crear cada uno
-            DB::transaction(function () use ($request, $cursoAcademicoId) {
-                foreach ($request->indicadores as $indData) {
-                    if (! isset($indData['nombre']) || empty($indData['nombre'])) {
-                        continue;
-                    }
+    public function apply(
+        StoreIndicatorApplicationRequest $request,
+        IndicadorService $service,
+        AuditService $audit,
+    ): RedirectResponse {
+        $data = $request->validated();
+        $application = $service->apply(Indicador::query()->findOrFail($data['indicador_id']), $data);
+        $audit->recordModel('indicador.aplicado', $application);
 
-                    // Verificar si el indicador ya existe antes de crear
-                    $existe = Indicador::where('nombre', $indData['nombre'])->exists();
-                    if ($existe) {
-                        continue; // Saltar si ya existe
-                    }
+        return back()->with('success', 'Indicador aplicado correctamente.');
+    }
 
-                    // Crear el indicador (sin categoría)
-                    $indicador = Indicador::create([
-                        'nombre' => $indData['nombre'],
-                    ]);
+    public function destroyApplication(
+        Request $request,
+        string $type,
+        int $application,
+        AcademicScopeService $scopeService,
+        AuditService $audit,
+    ): RedirectResponse {
+        [$model, $entityKey] = match ($type) {
+            'grupo' => [IndicadorGrupo::class, 'grupo_id'],
+            'departamento' => [IndicadorDepartamento::class, 'departamento_id'],
+            'carrera' => [IndicadorCarrera::class, 'carrera_id'],
+            'anno' => [IndicadorAnio::class, 'anio_academico_id'],
+            'facultad' => [IndicadorFacultad::class, 'facultad_id'],
+            default => abort(404),
+        };
+        $record = $model::query()->findOrFail($application);
+        abort_unless($scopeService->canAccess($request->user(), $type, (int) $record->{$entityKey}), 403);
+        $before = $record->attributesToArray();
+        $record->delete();
+        $audit->record('indicador.aplicacion_eliminada', $model, $application, $before);
 
-                    // Crear registro en tabla de relación según especificación
-                    $especificacion = $indData['especificacion'] ?? 'general';
-
-                    switch ($especificacion) {
-                        case 'carrera':
-                            IndicadorCarrera::create([
-                                'nombre' => $indicador->nombre,
-                                'indicador_id' => $indicador->id,
-                                'carrera_id' => null,
-                                'curso_academico_id' => $cursoAcademicoId,
-                            ]);
-                            break;
-                        case 'grupo':
-                            IndicadorGrupo::create([
-                                'nombre' => $indicador->nombre,
-                                'indicador_id' => $indicador->id,
-                                'grupo_id' => null,
-                                'curso_academico_id' => $cursoAcademicoId,
-                            ]);
-                            break;
-                        case 'facultad':
-                            IndicadorFacultad::create([
-                                'nombre' => $indicador->nombre,
-                                'indicador_id' => $indicador->id,
-                                'facultad_id' => null,
-                                'curso_academico_id' => $cursoAcademicoId,
-                            ]);
-                            break;
-                        case 'departamento':
-                            IndicadorDepartamento::create([
-                                'nombre' => $indicador->nombre,
-                                'indicador_id' => $indicador->id,
-                                'departamento_id' => null,
-                                'curso_academico_id' => $cursoAcademicoId,
-                            ]);
-                            break;
-                        case 'anno':
-                            IndicadorAnio::create([
-                                'nombre' => $indicador->nombre,
-                                'indicador_id' => $indicador->id,
-                                'anio_academico_id' => null,
-                                'curso_academico_id' => $cursoAcademicoId,
-                            ]);
-                            break;
-                    }
-                }
-            });
-        } else {
-            // Fallback para un solo indicador (formulario antiguo)
-            $request->validate([
-                'nombre' => 'required|string|max:255|unique:indicador,nombre',
-            ]);
-
-            // Verificar si el indicador ya existe
-            $existe = Indicador::where('nombre', $request->nombre)->exists();
-            if (! $existe) {
-                Indicador::create([
-                    'nombre' => $request->nombre,
-                ]);
-            }
-        }
-
-        return redirect()->route('indicadores')->with('success', 'Indicador(es) creado(s) exitosamente');
+        return back()->with('success', 'Aplicación eliminada correctamente.');
     }
 
     public function storeValores(Request $request)

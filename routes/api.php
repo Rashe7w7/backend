@@ -30,14 +30,14 @@ Route::middleware(['web', 'auth', 'throttle:60,1'])->group(function () {
     Route::get('/categorias-indicador', [DataController::class, 'getCategoriasIndicador']);
     Route::post('/categorias-indicador', [DataController::class, 'storeCategoriaIndicador'])->middleware(['can:write-academic-data', 'department.scope']);
     Route::get('/indicadores', [DataController::class, 'getIndicadores']);
-    Route::post('/indicadores', [DataController::class, 'storeIndicador'])->middleware(['can:write-academic-data', 'department.scope']);
-    Route::delete('/indicadores/{id}', [DataController::class, 'destroyIndicador'])->middleware(['can:write-academic-data', 'department.scope']);
+    Route::post('/indicadores', [DataController::class, 'storeIndicador'])->middleware('can:create-indicators');
+    Route::delete('/indicadores/{id}', [DataController::class, 'destroyIndicador'])->middleware('can:manage-indicator-definitions');
     Route::get('/indicadores-carrera', [DataController::class, 'getIndicadoresCarrera']);
-    Route::post('/indicadores-carrera', [DataController::class, 'storeIndicadoresCarrera'])->middleware(['can:write-academic-data', 'department.scope']);
-    Route::post('/indicadores/create-and-assign', [DataController::class, 'createAndAssignIndicador'])->middleware(['can:write-academic-data', 'department.scope']);
+    Route::post('/indicadores-carrera', [DataController::class, 'storeIndicadoresCarrera'])->middleware('can:manage-indicator-definitions');
+    Route::post('/indicadores/create-and-assign', [DataController::class, 'createAndAssignIndicador']);
 
-    Route::post('/alumnoayudante', [AlumnoAyudanteController::class, 'storeFromForm'])->middleware(['can:write-academic-data', 'department.scope']);
-    Route::delete('/alumnoayudante/{id}', [AlumnoAyudanteController::class, 'destroy'])->middleware(['can:write-academic-data', 'department.scope']);
+    Route::post('/alumnoayudante', [AlumnoAyudanteController::class, 'storeFromForm']);
+    Route::delete('/alumnoayudante/{id}', [AlumnoAyudanteController::class, 'destroy']);
     Route::get('/profesores-by-asignatura/{asignaturaId}', [AlumnoAyudanteController::class, 'getProfesoresByAsignatura']);
     Route::get('/asignaturas-by-profesor/{profesorId}', [AlumnoAyudanteController::class, 'getAsignaturasByProfesor']);
 });

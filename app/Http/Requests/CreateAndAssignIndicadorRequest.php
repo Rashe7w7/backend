@@ -2,13 +2,25 @@
 
 namespace App\Http\Requests;
 
+use App\Services\AcademicScopeService;
 use Illuminate\Foundation\Http\FormRequest;
 
 class CreateAndAssignIndicadorRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can('write-academic-data') ?? false;
+        $type = (string) $this->input('especificacion');
+        $key = match ($type) {
+            'grupo' => 'grupo_id',
+            'departamento' => 'departamento_id',
+            'carrera' => 'carrera_id',
+            'anno' => 'anio_academico_id',
+            'facultad' => 'facultad_id',
+            default => null,
+        };
+
+        return $key !== null && $this->user() !== null
+            && app(AcademicScopeService::class)->canAccess($this->user(), $type, (int) $this->input($key));
     }
 
     public function rules(): array

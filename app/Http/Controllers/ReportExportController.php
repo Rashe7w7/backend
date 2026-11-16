@@ -2,12 +2,49 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\ExportIndicatorsRequest;
 use App\Models\Indicador;
+use App\Services\AuditService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 
 class ReportExportController extends Controller
 {
+    public function csv(ExportIndicatorsRequest $request, AuditService $auditService): Response
+    {
+        $data = $request->validated();
+        $indicators = Indicador::query()->with('categoria')->whereKey($data['indicadores'])->orderBy('nombre')->get();
+        $stream = fopen('php://temp', 'r+');
+        fputcsv($stream, ['Indicador', 'Categoría', 'Especificación', 'Entidad', 'Curso', 'Valor']);
+
+        foreach ($indicators as $indicator) {
+            fputcsv($stream, [
+                $indicator->nombre,
+                $indicator->categoria?->nombre ?? 'Sin categoría',
+                $data['especificacion'],
+                $data['entidad_id'],
+                $data['curso_academico_id'] ?? '',
+                $data['valores'][$indicator->id] ?? '',
+            ]);
+        }
+
+        rewind($stream);
+        $csv = stream_get_contents($stream);
+        fclose($stream);
+
+        $auditService->record('csv.generado', 'indicadores', null, null, [
+            'especificacion' => $data['especificacion'],
+            'entidad_id' => $data['entidad_id'],
+            'curso_academico_id' => $data['curso_academico_id'] ?? null,
+            'indicadores' => $data['indicadores'],
+        ]);
+
+        return response("\xEF\xBB\xBF".$csv, 200, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="indicadores-'.now()->format('Ymd-His').'.csv"',
+        ]);
+    }
+
     public function excel(Request $request): Response
     {
         $rows = $this->rows($request);
