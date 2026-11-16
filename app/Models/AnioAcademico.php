@@ -8,7 +8,14 @@ class AnioAcademico extends Model
 {
     protected $table = 'anio_academico';
 
-    protected $fillable = ['nombre', 'carrera_id'];
+    protected $fillable = ['nombre', 'carrera_id', 'nivel'];
+
+    protected function casts(): array
+    {
+        return [
+            'nivel' => 'integer',
+        ];
+    }
 
     public $timestamps = true;
 

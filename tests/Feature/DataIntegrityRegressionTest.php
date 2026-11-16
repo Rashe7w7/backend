@@ -2,99 +2,43 @@
 
 use App\Models\Alumno;
 use App\Models\CategoriaIndicador;
-use App\Models\Facultad;
 use App\Models\Indicador;
 use App\Models\User;
-use App\Services\IndicadorService;
-use Illuminate\Database\QueryException;
-use Illuminate\Validation\ValidationException;
 
-test('indicator creation rolls back its parent when the assignment fails', function () {
-    $category = CategoriaIndicador::create(['nombre' => 'Calidad']);
-
-    expect(fn () => app(IndicadorService::class)->createAndAssign([
-        'nombre' => 'Indicador transaccional',
-        'categoria_indicador' => $category->id,
-        'especificacion' => 'facultad',
-        'facultad_id' => 999999,
-    ]))->toThrow(QueryException::class);
-
-    $this->assertDatabaseMissing('indicador', ['nombre' => 'Indicador transaccional']);
-    $this->assertDatabaseCount('indicador_facultad', 0);
-});
-
-test('duplicate assignments do not create additional indicator rows', function () {
-    $category = CategoriaIndicador::create(['nombre' => 'Calidad']);
-    $faculty = Facultad::create(['nombre' => 'Ciencias']);
-    $data = [
-        'nombre' => 'Indicador compartido',
-        'categoria_indicador' => $category->id,
-        'especificacion' => 'facultad',
-        'facultad_id' => $faculty->id,
-    ];
-
-    app(IndicadorService::class)->createAndAssign($data);
-
-    expect(fn () => app(IndicadorService::class)->createAndAssign($data))
-        ->toThrow(ValidationException::class);
-
-    $this->assertDatabaseCount('indicador', 1);
-    $this->assertDatabaseCount('indicador_facultad', 1);
-});
-
-test('one indicator can be assigned to multiple faculties without duplicating its parent', function () {
-    $category = CategoriaIndicador::create(['nombre' => 'Calidad']);
-    $first = Facultad::create(['nombre' => 'Ciencias']);
-    $second = Facultad::create(['nombre' => 'Ingeniería']);
-    $data = [
-        'nombre' => 'Indicador compartido',
-        'categoria_indicador' => $category->id,
-        'especificacion' => 'facultad',
-        'facultad_id' => $first->id,
-    ];
-
-    $indicator = app(IndicadorService::class)->createAndAssign($data);
-    $other = app(IndicadorService::class)->createAndAssign(array_replace($data, ['facultad_id' => $second->id]));
-
-    expect($other->id)->toBe($indicator->id);
-    $this->assertDatabaseCount('indicador', 1);
-    $this->assertDatabaseCount('indicador_facultad', 2);
-});
-
-test('assignment validation rejects missing academic courses before creating an indicator', function () {
+test('indicator creation stores its specification without entity assignments', function () {
     $this->actingAs(User::factory()->withoutTwoFactor()->create(['role' => 'administrador']));
     $category = CategoriaIndicador::create(['nombre' => 'Calidad']);
 
-    $this->postJson('/api/indicadores/create-and-assign', [
-        'nombre' => 'Indicador sin curso',
-        'categoria_indicador' => $category->id,
+    $this->postJson('/api/indicadores', [
+        'nombre' => 'Indicador general',
+        'categoria_indicador_id' => $category->id,
         'especificacion' => 'carrera',
-        'carrera_id' => 999999,
-    ])->assertUnprocessable()->assertJsonValidationErrors(['curso_academico_id', 'carrera_id']);
+    ])->assertCreated()
+        ->assertJsonPath('nombre', 'Indicador general')
+        ->assertJsonPath('especificacion', 'carrera');
 
-    expect(Indicador::where('nombre', 'Indicador sin curso')->exists())->toBeFalse();
+    $this->assertDatabaseHas('indicador', [
+        'nombre' => 'Indicador general',
+        'categoria_indicador_id' => $category->id,
+        'especificacion' => 'carrera',
+    ]);
+    $this->assertDatabaseCount('indicador_carrera', 0);
 });
 
-test('an existing indicator cannot silently accept a different category', function () {
-    $original = CategoriaIndicador::create(['nombre' => 'Calidad']);
-    $different = CategoriaIndicador::create(['nombre' => 'Investigación']);
-    $first = Facultad::create(['nombre' => 'Ciencias']);
-    $second = Facultad::create(['nombre' => 'Ingeniería']);
-    $data = [
-        'nombre' => 'Indicador con categoría',
-        'categoria_indicador' => $original->id,
+test('indicator creation rejects duplicate names and invalid specifications', function () {
+    $this->actingAs(User::factory()->withoutTwoFactor()->create(['role' => 'administrador']));
+    $category = CategoriaIndicador::create(['nombre' => 'Calidad']);
+    Indicador::create([
+        'nombre' => 'Indicador existente',
+        'categoria_indicador_id' => $category->id,
         'especificacion' => 'facultad',
-        'facultad_id' => $first->id,
-    ];
-    $indicator = app(IndicadorService::class)->createAndAssign($data);
+    ]);
 
-    expect(fn () => app(IndicadorService::class)->createAndAssign(array_replace($data, [
-        'categoria_indicador' => $different->id,
-        'facultad_id' => $second->id,
-    ])))->toThrow(ValidationException::class);
-
-    expect($indicator->fresh()->categoria_indicador_id)->toBe($original->id);
-    $this->assertDatabaseCount('indicador_facultad', 1);
+    $this->postJson('/api/indicadores', [
+        'nombre' => 'Indicador existente',
+        'categoria_indicador_id' => $category->id,
+        'especificacion' => 'general',
+    ])->assertUnprocessable()->assertJsonValidationErrors(['nombre', 'especificacion']);
 });
 
 test('student pagination rejects unsafe page sizes', function ($pageSize) {

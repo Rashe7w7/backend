@@ -22,6 +22,7 @@ Route::middleware(['web', 'auth', 'throttle:60,1'])->group(function () {
     Route::post('/curriculos', [DataController::class, 'storeCurriculo'])->middleware(['can:write-academic-data', 'department.scope']);
     Route::get('/cursos-academicos', [DataController::class, 'getAniosAcademicos']);
     Route::get('/anios-academicos', [DataController::class, 'getYearsAcademicos']);
+    Route::get('/niveles-academicos', [DataController::class, 'getNivelesAcademicos']);
     Route::post('/anios-academicos', [DataController::class, 'storeAnioAcademico'])->middleware(['can:write-academic-data', 'department.scope']);
     Route::get('/grupos', [DataController::class, 'getGrupos']);
     Route::post('/grupos', [DataController::class, 'storeGrupo'])->middleware(['can:write-academic-data', 'department.scope']);
@@ -30,11 +31,8 @@ Route::middleware(['web', 'auth', 'throttle:60,1'])->group(function () {
     Route::get('/categorias-indicador', [DataController::class, 'getCategoriasIndicador']);
     Route::post('/categorias-indicador', [DataController::class, 'storeCategoriaIndicador'])->middleware(['can:write-academic-data', 'department.scope']);
     Route::get('/indicadores', [DataController::class, 'getIndicadores']);
-    Route::post('/indicadores', [DataController::class, 'storeIndicador'])->middleware(['can:write-academic-data', 'department.scope']);
+    Route::post('/indicadores', [DataController::class, 'storeIndicador'])->middleware('can:manage-users');
     Route::delete('/indicadores/{id}', [DataController::class, 'destroyIndicador'])->middleware(['can:write-academic-data', 'department.scope']);
-    Route::get('/indicadores-carrera', [DataController::class, 'getIndicadoresCarrera']);
-    Route::post('/indicadores-carrera', [DataController::class, 'storeIndicadoresCarrera'])->middleware(['can:write-academic-data', 'department.scope']);
-    Route::post('/indicadores/create-and-assign', [DataController::class, 'createAndAssignIndicador'])->middleware(['can:write-academic-data', 'department.scope']);
 
     Route::post('/alumnoayudante', [AlumnoAyudanteController::class, 'storeFromForm'])->middleware(['can:write-academic-data', 'department.scope']);
     Route::delete('/alumnoayudante/{id}', [AlumnoAyudanteController::class, 'destroy'])->middleware(['can:write-academic-data', 'department.scope']);

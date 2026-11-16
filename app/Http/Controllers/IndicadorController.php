@@ -5,14 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Carrera;
 use App\Models\CursoAcademico;
 use App\Models\Indicador;
-use App\Models\IndicadorAnio;
-use App\Models\IndicadorCarrera;
-use App\Models\IndicadorDepartamento;
-use App\Models\IndicadorFacultad;
-use App\Models\IndicadorGrupo;
 use App\Models\IndicadorValor;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class IndicadorController extends Controller
 {
@@ -26,102 +20,6 @@ class IndicadorController extends Controller
         $carreras = Carrera::all();
 
         return view('indicadores', compact('indicadores', 'cursosAcademicos', 'carreras'));
-    }
-
-    public function store(Request $request)
-    {
-        // Procesar múltiples indicadores enviados desde el formulario dinámico
-        if ($request->has('indicadores') && is_array($request->indicadores)) {
-            // Validar todo primero (sin categoría; es decorativa)
-            // Agregamos unique para evitar duplicados en la validación
-            $request->validate([
-                'indicadores.*.nombre' => 'required|string|max:255|unique:indicador,nombre',
-                'indicadores.*.especificacion' => 'required|string|in:grupo,facultad,departamento,carrera,anno,general',
-            ]);
-
-            $cursoAcademicoId = $request->input('curso_academico_id');
-
-            // Luego crear cada uno
-            DB::transaction(function () use ($request, $cursoAcademicoId) {
-                foreach ($request->indicadores as $indData) {
-                    if (! isset($indData['nombre']) || empty($indData['nombre'])) {
-                        continue;
-                    }
-
-                    // Verificar si el indicador ya existe antes de crear
-                    $existe = Indicador::where('nombre', $indData['nombre'])->exists();
-                    if ($existe) {
-                        continue; // Saltar si ya existe
-                    }
-
-                    // Crear el indicador (sin categoría)
-                    $indicador = Indicador::create([
-                        'nombre' => $indData['nombre'],
-                    ]);
-
-                    // Crear registro en tabla de relación según especificación
-                    $especificacion = $indData['especificacion'] ?? 'general';
-
-                    switch ($especificacion) {
-                        case 'carrera':
-                            IndicadorCarrera::create([
-                                'nombre' => $indicador->nombre,
-                                'indicador_id' => $indicador->id,
-                                'carrera_id' => null,
-                                'curso_academico_id' => $cursoAcademicoId,
-                            ]);
-                            break;
-                        case 'grupo':
-                            IndicadorGrupo::create([
-                                'nombre' => $indicador->nombre,
-                                'indicador_id' => $indicador->id,
-                                'grupo_id' => null,
-                                'curso_academico_id' => $cursoAcademicoId,
-                            ]);
-                            break;
-                        case 'facultad':
-                            IndicadorFacultad::create([
-                                'nombre' => $indicador->nombre,
-                                'indicador_id' => $indicador->id,
-                                'facultad_id' => null,
-                                'curso_academico_id' => $cursoAcademicoId,
-                            ]);
-                            break;
-                        case 'departamento':
-                            IndicadorDepartamento::create([
-                                'nombre' => $indicador->nombre,
-                                'indicador_id' => $indicador->id,
-                                'departamento_id' => null,
-                                'curso_academico_id' => $cursoAcademicoId,
-                            ]);
-                            break;
-                        case 'anno':
-                            IndicadorAnio::create([
-                                'nombre' => $indicador->nombre,
-                                'indicador_id' => $indicador->id,
-                                'anio_academico_id' => null,
-                                'curso_academico_id' => $cursoAcademicoId,
-                            ]);
-                            break;
-                    }
-                }
-            });
-        } else {
-            // Fallback para un solo indicador (formulario antiguo)
-            $request->validate([
-                'nombre' => 'required|string|max:255|unique:indicador,nombre',
-            ]);
-
-            // Verificar si el indicador ya existe
-            $existe = Indicador::where('nombre', $request->nombre)->exists();
-            if (! $existe) {
-                Indicador::create([
-                    'nombre' => $request->nombre,
-                ]);
-            }
-        }
-
-        return redirect()->route('indicadores')->with('success', 'Indicador(es) creado(s) exitosamente');
     }
 
     public function storeValores(Request $request)

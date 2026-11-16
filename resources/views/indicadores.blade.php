@@ -72,49 +72,16 @@
 
                 <div>
                     <label class="block text-sm font-medium text-gray-600 mb-1">Especificación</label>
-                    <select id="especificacionIndicador" onchange="actualizarCamposEspecificacion()" class="w-full p-3 border-2 border-gray-200 rounded-lg input-focus hover:border-primary transition-colors cursor-pointer bg-white">
+                    <select id="especificacionIndicador" class="w-full p-3 border-2 border-gray-200 rounded-lg input-focus hover:border-primary transition-colors cursor-pointer bg-white">
                         <option value="">-- Selecciona especificación --</option>
                         <option value="Carrera">Carrera</option>
                         <option value="Facultad">Facultad</option>
                         <option value="Departamento">Departamento</option>
                         <option value="Grupo">Grupo</option>
-                        <option value="Nivel académico">Nivel académico (1, 2, 3...)</option>
+                        <option value="Nivel académico">Nivel académico</option>
                     </select>
                 </div>
 
-                <div id="camposEspecificacion" class="hidden space-y-3">
-                    <div id="campoCarrera" class="hidden">
-                        <label class="block text-sm font-medium text-gray-600 mb-1">Carrera</label>
-                        <select id="carreraCrear" class="w-full p-3 border-2 border-gray-200 rounded-lg input-focus cursor-pointer bg-white">
-                            <option value="">-- Selecciona carrera --</option>
-                        </select>
-                    </div>
-                    <div id="campoFacultad" class="hidden">
-                        <label class="block text-sm font-medium text-gray-600 mb-1">Facultad</label>
-                        <select id="facultadCrear" class="w-full p-3 border-2 border-gray-200 rounded-lg input-focus cursor-pointer bg-white">
-                            <option value="">-- Selecciona facultad --</option>
-                        </select>
-                    </div>
-                    <div id="campoDepartamento" class="hidden">
-                        <label class="block text-sm font-medium text-gray-600 mb-1">Departamento</label>
-                        <select id="departamentoCrear" class="w-full p-3 border-2 border-gray-200 rounded-lg input-focus cursor-pointer bg-white">
-                            <option value="">-- Selecciona departamento --</option>
-                        </select>
-                    </div>
-                    <div id="campoGrupo" class="hidden">
-                        <label class="block text-sm font-medium text-gray-600 mb-1">Grupo</label>
-                        <select id="grupoCrear" class="w-full p-3 border-2 border-gray-200 rounded-lg input-focus cursor-pointer bg-white">
-                            <option value="">-- Selecciona grupo --</option>
-                        </select>
-                    </div>
-                    <div id="campoAnio" class="hidden">
-                        <label class="block text-sm font-medium text-gray-600 mb-1">Nivel Académico <span class="text-xs text-blue-600">(1, 2, 3...)</span></label>
-                        <select id="anioCrear" class="w-full p-3 border-2 border-gray-200 rounded-lg input-focus cursor-pointer bg-white">
-                            <option value="">-- Selecciona nivel --</option>
-                        </select>
-                    </div>
-                </div>
-                
                 <button onclick="crearIndicador()" 
                         class="w-full bg-emerald-500 text-white p-3 rounded-lg hover:bg-emerald-600 transition-colors font-semibold flex items-center justify-center gap-2">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -143,7 +110,7 @@
                         <option value="facultad">Facultad</option>
                         <option value="departamento">Departamento</option>
                         <option value="grupo">Grupo</option>
-                        <option value="anno">Año académico</option>
+                        <option value="nivel_academico">Nivel académico</option>
                     </select>
                 </div>
 
@@ -185,20 +152,14 @@
             </button>
         </div>
         
-        <div id="infoAnoAcademico" class="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg hidden">
+        <div id="infoAnoAcademico" class="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg hidden space-y-3">
             <p class="text-sm text-blue-700"><span class="font-semibold">Período Académico:</span> <span id="annoAcademicoBadge" class="font-medium"></span></p>
-          
-<div class="mb-4 p-3 bg-gray-50 border border-gray-200 rounded-lg flex flex-col sm:flex-row sm:items-center gap-2">
-    <div class="flex items-center gap-1 min-w-fit">
-        <svg class="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-        </svg>
-        <span class="text-sm font-medium text-gray-700"></span>
-    </div>
-    <input type="text" id="instanciaCSV" placeholder="Instancia(ejemplo: de Facultad escribir FMFC)" 
-           class="flex-1 p-2 border border-gray-200 rounded-lg text-sm input-focus bg-white">
-
-</div>
+            <div>
+                <label id="instanciaLabel" for="instanciaSelect" class="block text-sm font-medium text-gray-700 mb-1">Instancia</label>
+                <select id="instanciaSelect" class="w-full p-2 border border-gray-200 rounded-lg text-sm input-focus bg-white">
+                    <option value="">-- Selecciona una instancia --</option>
+                </select>
+            </div>
         </div>
         
         <div class="overflow-x-auto">
@@ -234,13 +195,6 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                 </svg>
                 Exportar CSV
-            </button>
-            <button onclick="guardarVista()" 
-                    class="bg-emerald-500 text-white px-6 py-2 rounded-lg hover:bg-emerald-600 transition-colors font-semibold flex items-center gap-2">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/>
-                </svg>
-                Guardar Vista
             </button>
         </div>
     </section>
@@ -279,15 +233,11 @@ let contadorId = 1;
 let categoriasIndicador = {};
 let categoriasPorId = {};
 let especificacionTabla = null; // Controla el tipo de especificación permitida en la tabla
+let categoriaTabla = null;
 let annoAcademicoTabla = null; // Almacena el año académico de la tabla
 
 document.addEventListener('DOMContentLoaded', function() {
     cargarCursos();
-    cargarCarreras();
-    cargarFacultades();
-    cargarDepartamentos();
-    cargarGrupos();
-    cargarAnios();
     // Cargar categorías y luego indicadores para que los nombres de categoría estén listos
     cargarCategorias().then(() => {
         cargarIndicadores();
@@ -373,111 +323,22 @@ function crearIndicador() {
         return;
     }
     
-    // Validar que el curso académico esté seleccionado para las especificaciones que lo requieren
-    const especificacionesQueRequierenCurso = ['Carrera', 'Departamento', 'Grupo', 'Nivel académico'];
-    if (especificacionesQueRequierenCurso.includes(especificacion)) {
-        const curso = document.getElementById('cursoSelect').value;
-        if (!curso) {
-            mostrarToast('Selecciona un Período Académico primero en la sección superior', 'error');
-            return;
-        }
-    }
-    
-    if (!categoriaId) {
-        mostrarToast('Categoría no encontrada en la base de datos', 'error');
-        return;
-    }
-    
-    // Mapear especificación a minúsculas para el API
-    let especificacionKey = '';
-    switch(especificacion) {
-        case 'Carrera': especificacionKey = 'carrera'; break;
-        case 'Facultad': especificacionKey = 'facultad'; break;
-        case 'Departamento': especificacionKey = 'departamento'; break;
-        case 'Grupo': especificacionKey = 'grupo'; break;
-        case 'Nivel académico': especificacionKey = 'anno'; break;
-    }
+    const especificaciones = {
+        'Carrera': 'carrera',
+        'Facultad': 'facultad',
+        'Departamento': 'departamento',
+        'Grupo': 'grupo',
+        'Nivel académico': 'nivel_academico',
+    };
+    const especificacionKey = especificaciones[especificacion];
     
     const payload = { 
         nombre, 
-        categoria_indicador: categoriaId,
+        categoria_indicador_id: categoriaId,
         especificacion: especificacionKey
     };
-    
-    // Recopilar los IDs según la especificación
-    switch(especificacion) {
-        case 'Carrera':
-            const carreraId = document.getElementById('carreraCrear').value;
-            if (!carreraId) {
-                mostrarToast('Selecciona una carrera', 'error');
-                return;
-            }
-            payload.carrera_id = parseInt(carreraId, 10);
-            // La carrera requiere curso_academico_id
-            const curso = document.getElementById('cursoSelect').value;
-            if (!curso) {
-                mostrarToast('Selecciona un curso académico primero', 'error');
-                return;
-            }
-            payload.curso_academico_id = parseInt(curso, 10);
-            break;
-        
-        case 'Facultad':
-            const facultadId = document.getElementById('facultadCrear').value;
-            if (!facultadId) {
-                mostrarToast('Selecciona una facultad', 'error');
-                return;
-            }
-            payload.facultad_id = parseInt(facultadId, 10);
-            break;
-        
-        case 'Departamento':
-            const departamentoId = document.getElementById('departamentoCrear').value;
-            if (!departamentoId) {
-                mostrarToast('Selecciona un departamento', 'error');
-                return;
-            }
-            payload.departamento_id = parseInt(departamentoId, 10);
-            const cursoDept = document.getElementById('cursoSelect').value;
-            if (!cursoDept) {
-                mostrarToast('Selecciona un curso académico primero', 'error');
-                return;
-            }
-            payload.curso_academico_id = parseInt(cursoDept, 10);
-            break;
-        
-        case 'Grupo':
-            const grupoId = document.getElementById('grupoCrear').value;
-            if (!grupoId) {
-                mostrarToast('Selecciona un grupo', 'error');
-                return;
-            }
-            payload.grupo_id = parseInt(grupoId, 10);
-            const cursoGrupo = document.getElementById('cursoSelect').value;
-            if (!cursoGrupo) {
-                mostrarToast('Selecciona un curso académico primero', 'error');
-                return;
-            }
-            payload.curso_academico_id = parseInt(cursoGrupo, 10);
-            break;
-        
-        case 'Nivel académico':
-            const anioId = document.getElementById('anioCrear').value;
-            if (!anioId) {
-                mostrarToast('Selecciona un nivel académico', 'error');
-                return;
-            }
-            payload.anio_academico_id = parseInt(anioId, 10);
-            const cursoAnio = document.getElementById('cursoSelect').value;
-            if (!cursoAnio) {
-                mostrarToast('Selecciona un período académico primero', 'error');
-                return;
-            }
-            payload.curso_academico_id = parseInt(cursoAnio, 10);
-            break;
-    }
 
-    fetch(`${API_BASE}/indicadores/create-and-assign`, {
+    fetch(`${API_BASE}/indicadores`, {
         method: 'POST',
         headers: jsonHeaders,
         body: JSON.stringify(payload)
@@ -492,19 +353,19 @@ function crearIndicador() {
         const categoriaNombre = selectCat.options[selectCat.selectedIndex].text;
         
         // Usar especificacionKey (valor del backend, ej: 'carrera') en lugar de especificacion (label, ej: 'Carrera')
-        indicadoresExistentes.push({ id: data.id, nombre: data.nombre, categoria: categoriaNombre, espec: especificacionKey });
+        indicadoresExistentes.push({
+            id: data.id,
+            nombre: data.nombre,
+            categoria: categoriaNombre,
+            categoria_id: data.categoria_indicador_id,
+            espec: data.especificacion,
+        });
         contadorId = Math.max(contadorId, data.id + 1);
         actualizarListaIndicadores();
         actualizarSelectIndicadores();
         document.getElementById('nombreIndicador').value = '';
         document.getElementById('categoriaIndicador').value = '';
         document.getElementById('especificacionIndicador').value = '';
-        document.getElementById('carreraCrear').value = '';
-        document.getElementById('facultadCrear').value = '';
-        document.getElementById('departamentoCrear').value = '';
-        document.getElementById('grupoCrear').value = '';
-        document.getElementById('anioCrear').value = '';
-        actualizarCamposEspecificacion();
         mostrarToast(`Indicador "${nombre}" creado correctamente`);
         
         // Recargar indicadores desde el backend para asegurar que todo esté sincronizado
@@ -595,13 +456,7 @@ function filtrarIndicadores() {
 function agregarIndicadorDirecto(id) {
     const indicador = indicadoresExistentes.find(ind => ind.id === id);
     if (indicador) {
-        const especVista = obtenerEspecificacionVista();
-        if (especVista && indicador.espec !== especVista) {
-            mostrarToast(`Solo puedes añadir indicadores con especificación "${especVista}"`, 'error');
-            return;
-        }
-        const cursoId = document.getElementById('cursoSelect').value;
-        agregarFilaVista(indicador.nombre, indicador.categoria, indicador.espec, cursoId);
+        agregarFilaVista(indicador);
     }
 }
 
@@ -622,38 +477,41 @@ function agregarIndicadorVista() {
         return;
     }
     
-    const cursoId = document.getElementById('cursoSelect').value;
-    agregarFilaVista(indicador.nombre, indicador.categoria, indicador.espec, cursoId);
+    agregarFilaVista(indicador);
 }
 
-function agregarFilaVista(nombre, categoria, espec, cursoId = null) {
+function agregarFilaVista(indicador) {
     const tbody = document.getElementById('vistaBody');
+    const cursoSelect = document.getElementById('cursoSelect');
+    const cursoId = cursoSelect.value;
+
+    if (!cursoId) {
+        mostrarToast('Selecciona un período académico antes de formar la vista', 'error');
+        return;
+    }
     
     // Verificar si el indicador ya existe en la tabla
     const filasExistentes = tbody.querySelectorAll('tr:not(#filaVacia)');
     for (let fila of filasExistentes) {
         const nombreEnFila = fila.cells[0].textContent.trim();
-        if (nombreEnFila === nombre) {
-            mostrarToast(`El indicador "${nombre}" ya está en la tabla`, 'error');
+        if (nombreEnFila === indicador.nombre) {
+            mostrarToast(`El indicador "${indicador.nombre}" ya está en la tabla`, 'error');
             return;
         }
     }
     
     // Validar que todos los indicadores sean del mismo tipo de especificación
     if (especificacionTabla === null) {
-        // Es el primer indicador, establecer el tipo de especificación
-        especificacionTabla = espec;
-        
-        // Obtener y mostrar el año académico si está disponible
-        if (cursoId) {
-            const select = document.getElementById('cursoSelect');
-            const option = select.options[select.selectedIndex];
-            annoAcademicoTabla = option.text;
-            mostrarAnoAcademico();
-        }
-    } else if (especificacionTabla !== espec) {
-        // El tipo de especificación es diferente
-        mostrarToast(`La tabla solo puede contener indicadores de tipo "${especificacionTabla}". No se pueden mezclar con "${espec}"`, 'error');
+        especificacionTabla = indicador.espec;
+        categoriaTabla = indicador.categoria_id;
+        annoAcademicoTabla = cursoSelect.options[cursoSelect.selectedIndex].text;
+        cursoSelect.disabled = true;
+        mostrarContextoVista();
+    } else if (especificacionTabla !== indicador.espec) {
+        mostrarToast(`La tabla solo puede contener indicadores con especificación "${etiquetaEspecificacion(especificacionTabla)}"`, 'error');
+        return;
+    } else if (categoriaTabla !== indicador.categoria_id) {
+        mostrarToast(`La tabla solo puede contener indicadores del tipo de valor "${indicadoresExistentes.find(item => item.categoria_id === categoriaTabla)?.categoria || ''}"`, 'error');
         return;
     }
     
@@ -664,9 +522,9 @@ function agregarFilaVista(nombre, categoria, espec, cursoId = null) {
     fila.className = 'border-t border-gray-100 hover:bg-orange-50/50 transition-colors fade-in';
     
     let inputValor = '';
-    if (categoria === 'Numérico' || categoria === 'Porcentual') {
-        inputValor = `<input type="number" step="0.01" class="w-full p-2 border-2 border-gray-200 rounded-lg input-focus text-sm" placeholder="${categoria === 'Porcentual' ? '0-100%' : 'Valor'}">`;
-    } else if (categoria === 'Cualitativo') {
+    if (indicador.categoria === 'Numérico' || indicador.categoria === 'Porcentual') {
+        inputValor = `<input type="number" step="0.01" class="w-full p-2 border-2 border-gray-200 rounded-lg input-focus text-sm" placeholder="${indicador.categoria === 'Porcentual' ? '0-100%' : 'Valor'}">`;
+    } else if (indicador.categoria === 'Cualitativo') {
         inputValor = `<select class="w-full p-2 border-2 border-gray-200 rounded-lg input-focus text-sm cursor-pointer bg-white">
             <option value="">Seleccionar</option>
             <option value="Excelente">Excelente</option>
@@ -674,7 +532,7 @@ function agregarFilaVista(nombre, categoria, espec, cursoId = null) {
             <option value="Regular">Regular</option>
             <option value="Deficiente">Deficiente</option>
         </select>`;
-    } else if (categoria === 'Booleano') {
+    } else if (indicador.categoria === 'Booleano') {
         inputValor = `<select class="w-full p-2 border-2 border-gray-200 rounded-lg input-focus text-sm cursor-pointer bg-white">
             <option value="">Seleccionar</option>
             <option value="Sí">Sí</option>
@@ -685,9 +543,9 @@ function agregarFilaVista(nombre, categoria, espec, cursoId = null) {
     }
     
     fila.innerHTML = `
-        <td class="p-3 font-medium text-gray-800">${nombre}</td>
-        <td class="p-3"><span class="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">${categoria}</span></td>
-        <td class="p-3 text-gray-600">${espec}</td>
+        <td class="p-3 font-medium text-gray-800">${escaparHtml(indicador.nombre)}</td>
+        <td class="p-3"><span class="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">${escaparHtml(indicador.categoria)}</span></td>
+        <td class="p-3 text-gray-600">${escaparHtml(etiquetaEspecificacion(indicador.espec))}</td>
         <td class="p-3">${inputValor}</td>
         <td class="p-3 text-center">
             <button onclick="eliminarFila(this)" class="text-red-400 hover:text-red-600 transition-colors p-1 hover:bg-red-50 rounded" title="Eliminar">
@@ -699,17 +557,62 @@ function agregarFilaVista(nombre, categoria, espec, cursoId = null) {
     `;
     tbody.appendChild(fila);
     actualizarContador();
-    mostrarToast(`"${nombre}" añadido a la vista`);
+    mostrarToast(`"${indicador.nombre}" añadido a la vista`);
 }
 
-// Mostrar el año académico en la tabla
-function mostrarAnoAcademico() {
+function mostrarContextoVista() {
     const infoDiv = document.getElementById('infoAnoAcademico');
     const badge = document.getElementById('annoAcademicoBadge');
-    if (annoAcademicoTabla) {
-        badge.textContent = annoAcademicoTabla;
-        infoDiv.classList.remove('hidden');
-    }
+    badge.textContent = annoAcademicoTabla;
+    infoDiv.classList.remove('hidden');
+    cargarInstancias(especificacionTabla);
+}
+
+function cargarInstancias(especificacion) {
+    const configuracion = {
+        carrera: { etiqueta: 'Carrera', endpoint: 'carreras' },
+        facultad: { etiqueta: 'Facultad', endpoint: 'facultades' },
+        departamento: { etiqueta: 'Departamento', endpoint: 'departamentos' },
+        grupo: { etiqueta: 'Grupo', endpoint: 'grupos' },
+        nivel_academico: { etiqueta: 'Nivel académico', endpoint: 'niveles-academicos' },
+    }[especificacion];
+    const select = document.getElementById('instanciaSelect');
+
+    document.getElementById('instanciaLabel').textContent = configuracion.etiqueta;
+    select.innerHTML = `<option value="">-- Selecciona ${configuracion.etiqueta.toLowerCase()} --</option>`;
+    select.disabled = true;
+
+    fetch(`${API_BASE}/${configuracion.endpoint}`)
+        .then(async response => {
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.message || 'No se pudieron cargar las instancias');
+            }
+
+            data.forEach(item => {
+                const label = item.contexto ? `${item.nombre} — ${item.contexto}` : item.nombre;
+                select.add(new Option(label, item.id));
+            });
+            select.disabled = false;
+        })
+        .catch(error => mostrarToast(error.message, 'error'));
+}
+
+function etiquetaEspecificacion(especificacion) {
+    return {
+        carrera: 'Carrera',
+        facultad: 'Facultad',
+        departamento: 'Departamento',
+        grupo: 'Grupo',
+        nivel_academico: 'Nivel académico',
+    }[especificacion] || especificacion;
+}
+
+function escaparHtml(valor) {
+    const elemento = document.createElement('div');
+    elemento.textContent = valor;
+
+    return elemento.innerHTML;
 }
 
 // Eliminar fila
@@ -732,8 +635,11 @@ function eliminarFila(btn) {
         `;
         // Reiniciar la especificación cuando la tabla queda vacía
         especificacionTabla = null;
+        categoriaTabla = null;
         annoAcademicoTabla = null;
         document.getElementById('infoAnoAcademico').classList.add('hidden');
+        document.getElementById('instanciaSelect').innerHTML = '<option value="">-- Selecciona una instancia --</option>';
+        document.getElementById('cursoSelect').disabled = false;
     }
 }
 
@@ -759,108 +665,13 @@ function limpiarVista() {
         </tr>
     `;
     especificacionTabla = null; // Reiniciar la especificación
+    categoriaTabla = null;
     annoAcademicoTabla = null; // Reiniciar el año académico
     document.getElementById('infoAnoAcademico').classList.add('hidden'); // Ocultar la información del año académico
+    document.getElementById('instanciaSelect').innerHTML = '<option value="">-- Selecciona una instancia --</option>';
+    document.getElementById('cursoSelect').disabled = false;
     actualizarContador();
     mostrarToast('Vista limpiada');
-}
-
-// Guardar vista
-function guardarVista() {
-    const curso = document.getElementById('cursoSelect').value;
-    if (!curso) {
-        mostrarToast('Selecciona un curso académico primero', 'error');
-        return;
-    }
-    
-    const tbody = document.getElementById('vistaBody');
-    const filas = tbody.querySelectorAll('tr:not(#filaVacia)');
-    
-    if (filas.length === 0) {
-        mostrarToast('No hay indicadores para guardar', 'error');
-        return;
-    }
-    
-    mostrarToast(`Vista guardada con ${filas.length} indicadores`);
-}
-
-function actualizarCamposEspecificacion() {
-    const especificacion = document.getElementById('especificacionIndicador').value;
-    const camposEspec = document.getElementById('camposEspecificacion');
-    
-    if (!especificacion) {
-        camposEspec.classList.add('hidden');
-        return;
-    }
-    
-    camposEspec.classList.remove('hidden');
-    
-    // Ocultar todos los campos
-    document.getElementById('campoCarrera').classList.add('hidden');
-    document.getElementById('campoFacultad').classList.add('hidden');
-    document.getElementById('campoDepartamento').classList.add('hidden');
-    document.getElementById('campoGrupo').classList.add('hidden');
-    document.getElementById('campoAnio').classList.add('hidden');
-    
-    // Mostrar el campo correspondiente
-    switch(especificacion) {
-        case 'Carrera':
-            document.getElementById('campoCarrera').classList.remove('hidden');
-            cargarCarreras();
-            break;
-        case 'Facultad':
-            document.getElementById('campoFacultad').classList.remove('hidden');
-            cargarFacultades();
-            break;
-        case 'Departamento':
-            document.getElementById('campoDepartamento').classList.remove('hidden');
-            cargarDepartamentos();
-            break;
-        case 'Grupo':
-            document.getElementById('campoGrupo').classList.remove('hidden');
-            cargarGrupos();
-            break;
-        case 'Año académico':
-            document.getElementById('campoAnio').classList.remove('hidden');
-            cargarAnios();
-            break;
-    }
-}
-
-function cargarCarreras() {
-    const select = document.getElementById('carreraCrear');
-    select.innerHTML = '<option value="">-- Selecciona carrera --</option>';
-    fetch(`${API_BASE}/carreras`).then(async res => {
-        const data = await res.json();
-        (data || []).forEach(c => select.add(new Option(c.nombre, c.id)));
-    }).catch(() => {});
-}
-
-function cargarFacultades() {
-    const select = document.getElementById('facultadCrear');
-    select.innerHTML = '<option value="">-- Selecciona facultad --</option>';
-    fetch(`${API_BASE}/facultades`).then(async res => {
-        const data = await res.json();
-        (data || []).forEach(f => select.add(new Option(f.nombre, f.id)));
-    }).catch(() => {});
-}
-
-function cargarDepartamentos() {
-    const select = document.getElementById('departamentoCrear');
-    select.innerHTML = '<option value="">-- Selecciona departamento --</option>';
-    fetch(`${API_BASE}/departamentos`).then(async res => {
-        const data = await res.json();
-        (data || []).forEach(d => select.add(new Option(d.nombre, d.id)));
-    }).catch(() => {});
-}
-
-function cargarGrupos() {
-    const select = document.getElementById('grupoCrear');
-    select.innerHTML = '<option value="">-- Selecciona grupo --</option>';
-    fetch(`${API_BASE}/grupos`).then(async res => {
-        const data = await res.json();
-        (data || []).forEach(g => select.add(new Option(g.nombre, g.id)));
-    }).catch(() => {});
 }
 
 function cargarIndicadores() {
@@ -908,29 +719,6 @@ function cargarIndicadores() {
         });
 }
 
-function cargarIndicadoresVista() {
-    const tbody = document.getElementById('vistaBody');
-    const especVista = obtenerEspecificacionVista();
-    const cursoId = document.getElementById('cursoSelect').value;
-    
-    if (!especVista || !cursoId) return;
-    
-   
-}
-
-function cargarAnios() {
-    const selectCrear = document.getElementById('anioCrear');
-    const selectIndicador = document.getElementById('anioIndicador');
-    
-    fetch(`${API_BASE}/anios-academicos`).then(async res => {
-        const data = await res.json();
-        (data || []).forEach(a => {
-            if (selectCrear) selectCrear.add(new Option(a.nombre || `Año ${a.id}`, a.id));
-            if (selectIndicador) selectIndicador.add(new Option(a.nombre || `Año ${a.id}`, a.id));
-        });
-    }).catch(() => {});
-}
-
 function cargarCategorias() {
     const select = document.getElementById('categoriaIndicador');
     return fetch(`${API_BASE}/categorias-indicador`).then(async res => {
@@ -953,17 +741,6 @@ function cargarCursos() {
     }).catch(() => {});
 }
 
-function obtenerEspecificacionVista() {
-    const tbody = document.getElementById('vistaBody');
-    const filas = tbody.querySelectorAll('tr:not(#filaVacia)');
-    
-    if (filas.length === 0) return null;
-    
-    const primeraCelda = filas[0].querySelectorAll('td')[2];
-    return primeraCelda ? primeraCelda.textContent.trim() : null;
-}
-
-
 function exportarCSV() {
     const tbody = document.getElementById('vistaBody');
     const filas = tbody.querySelectorAll('tr:not(#filaVacia)');
@@ -972,8 +749,17 @@ function exportarCSV() {
         mostrarToast('No hay datos para exportar', 'error');
         return;
     }
-    
-    let csv = 'Indicador,Categoría,Especificación,Valor\n';
+
+    const instanciaSelect = document.getElementById('instanciaSelect');
+    if (!instanciaSelect.value) {
+        mostrarToast('Selecciona una instancia antes de exportar', 'error');
+        return;
+    }
+
+    const periodo = annoAcademicoTabla;
+    const instancia = instanciaSelect.options[instanciaSelect.selectedIndex].text;
+    const csvValue = value => `"${String(value).replaceAll('"', '""')}"`;
+    let csv = 'Período,Instancia,Indicador,Categoría,Especificación,Valor\n';
     
     filas.forEach(fila => {
         const celdas = fila.querySelectorAll('td');
@@ -982,7 +768,7 @@ function exportarCSV() {
         const espec = celdas[2].textContent.trim();
         const valorInput = celdas[3].querySelector('input, select');
         const valor = valorInput ? valorInput.value : '';
-        csv += `"${nombre}","${categoria}","${espec}","${valor}"\n`;
+        csv += [periodo, instancia, nombre, categoria, espec, valor].map(csvValue).join(',') + '\n';
     });
     
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });

@@ -31,7 +31,6 @@ Route::middleware('auth')->group(function () {
     Route::get('/alumnoayudante', [AlumnoAyudanteController::class, 'index'])->name('alumnoayudante');
 
     Route::get('/indicadores', [IndicadorController::class, 'index'])->name('indicadores');
-    Route::post('/indicadores', [IndicadorController::class, 'store'])->middleware('can:manage-users')->name('indicadores.store');
     Route::post('/valores', [IndicadorController::class, 'storeValores'])->middleware('can:manage-users')->name('valores.store');
     Route::get('/indicadores/bajas', [BajasController::class, 'index'])->name('indicadores.bajas');
     Route::get('/informes/indicadores/excel', [ReportExportController::class, 'excel'])->name('reports.indicadores.excel');

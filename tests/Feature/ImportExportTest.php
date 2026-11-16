@@ -13,7 +13,7 @@ test('an administrator can preview and confirm a student csv import', function (
     $administrator = User::factory()->withoutTwoFactor()->create(['role' => 'administrador']);
     $faculty = Facultad::create(['nombre' => 'Ciencias']);
     $degree = Carrera::create(['nombre' => 'Informática', 'facultad_id' => $faculty->id]);
-    $year = AnioAcademico::create(['nombre' => 'Primer año', 'carrera_id' => $degree->id]);
+    $year = AnioAcademico::create(['nombre' => 'Primer año', 'nivel' => 1, 'carrera_id' => $degree->id]);
     $group = Grupo::create(['nombre' => 'G-1', 'anio_academico_id' => $year->id]);
     $file = UploadedFile::fake()->createWithContent(
         'estudiantes.csv',
@@ -43,6 +43,7 @@ test('indicator exports produce spreadsheet xml and paginated pdf documents', fu
         Indicador::create([
             'nombre' => 'Indicador '.str_pad((string) $index, 3, '0', STR_PAD_LEFT),
             'categoria_indicador_id' => $category->id,
+            'especificacion' => 'facultad',
         ]);
     }
 

@@ -150,6 +150,7 @@ class FakeDataSeeder extends Seeder
             for ($a = 1; $a <= $anosCarrera; $a++) {
                 $anios[] = DB::table('anio_academico')->insertGetId([
                     'nombre' => "{$a}º año - Carrera {$carreraIndex} - 2025-2026",
+                    'nivel' => $a,
                     'carrera_id' => $carreraId,
                     'created_at' => now(),
                     'updated_at' => now(),
@@ -180,30 +181,6 @@ class FakeDataSeeder extends Seeder
                     'nombre' => $faker->name,
                     'email' => $faker->unique()->safeEmail,
                     'grupo_id' => $grupo,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
-            }
-        }
-
-        // CATEGORÍAS INDICADOR
-        $categorias = [];
-        foreach (['Docencia', 'Investigación', 'Extensión', 'Gestión Académica'] as $cat) {
-            $categorias[] = DB::table('categoria_indicador')->insertGetId([
-                'nombre' => $cat,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-        }
-
-        // INDICADORES
-        $indicadores = [];
-        $indicadorNumero = 1;
-        foreach ($categorias as $categoria) {
-            for ($i = 0; $i < 3; $i++) {
-                $indicadores[] = DB::table('indicador')->insertGetId([
-                    'nombre' => 'Indicador de prueba '.$indicadorNumero++,
-                    'categoria_indicador_id' => $categoria,
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
@@ -478,24 +455,6 @@ class FakeDataSeeder extends Seeder
             }
         }
 
-        // CURSO ACADÉMICO
-        $cursosAcademicos = [];
-        $cursoActivo = null;
-        for ($year = 2023; $year <= 2026; $year++) {
-            $cursoId = DB::table('curso_academico')->insertGetId([
-                'nombre' => "Curso $year-".($year + 1),
-                'fecha_inicio' => "$year-09-01 00:00:00",
-                'fecha_fin' => ($year + 1).'-08-31 23:59:59',
-                'activo' => $year == 2025,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-            $cursosAcademicos[] = $cursoId;
-            if ($year == 2025) {
-                $cursoActivo = $cursoId;
-            }
-        }
-
         // VERSIONES
         $versiones = [];
         foreach (['v1.0', 'v1.1', 'v2.0', 'v2.1'] as $version) {
@@ -547,151 +506,5 @@ class FakeDataSeeder extends Seeder
             }
         }
 
-        // INDICADORES POR FACULTAD
-        foreach ($indicadores as $indicador) {
-
-            $exists = DB::table('indicador_facultad')
-                ->where('indicador_id', $indicador)
-                ->where('facultad_id', $fmfcId)
-                ->where('curso_academico_id', $cursoActivo)
-                ->exists();
-
-            if (! $exists) {
-                DB::table('indicador_facultad')->insert([
-                    'nombre' => DB::table('indicador')->where('id', $indicador)->value('nombre'),
-                    'indicador_id' => $indicador,
-                    'facultad_id' => $fmfcId,
-                    'curso_academico_id' => $cursoActivo,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
-            }
-        }
-
-        // INDICADORES POR DEPARTAMENTO
-        foreach (array_slice($indicadores, 0, 8) as $indicador) {
-            $deptId = $faker->randomElement($departamentosArray);
-
-            $exists = DB::table('indicador_departamento')
-                ->where('indicador_id', $indicador)
-                ->where('departamento_id', $deptId)
-                ->where('curso_academico_id', $cursoActivo)
-                ->exists();
-
-            if (! $exists) {
-                DB::table('indicador_departamento')->insert([
-                    'nombre' => DB::table('indicador')->where('id', $indicador)->value('nombre'),
-                    'indicador_id' => $indicador,
-                    'departamento_id' => $deptId,
-                    'curso_academico_id' => $cursoActivo,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
-            }
-        }
-
-        // INDICADORES POR CARRERA
-        foreach (array_slice($indicadores, 0, 10) as $indicador) {
-            $carreraId = $faker->randomElement(array_keys($carreras));
-
-            $exists = DB::table('indicador_carrera')
-                ->where('indicador_id', $indicador)
-                ->where('carrera_id', $carreraId)
-                ->where('curso_academico_id', $cursoActivo)
-                ->exists();
-
-            if (! $exists) {
-                DB::table('indicador_carrera')->insert([
-                    'nombre' => DB::table('indicador')->where('id', $indicador)->value('nombre'),
-                    'indicador_id' => $indicador,
-                    'carrera_id' => $carreraId,
-                    'curso_academico_id' => $cursoActivo,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
-            }
-        }
-
-        // INDICADORES POR GRUPO
-        foreach (array_slice($indicadores, 0, 5) as $indicador) {
-            $grupoId = $faker->randomElement($grupos);
-
-            $exists = DB::table('indicador_grupo')
-                ->where('indicador_id', $indicador)
-                ->where('grupo_id', $grupoId)
-                ->where('curso_academico_id', $cursoActivo)
-                ->exists();
-
-            if (! $exists) {
-                DB::table('indicador_grupo')->insert([
-                    'nombre' => DB::table('indicador')->where('id', $indicador)->value('nombre'),
-                    'indicador_id' => $indicador,
-                    'grupo_id' => $grupoId,
-                    'curso_academico_id' => $cursoActivo,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
-            }
-        }
-
-        // INDICADORES POR AÑO ACADÉMICO
-        foreach (array_slice($indicadores, 0, 6) as $indicador) {
-            $anioId = $faker->randomElement($anios);
-
-            $exists = DB::table('indicador_anno')
-                ->where('indicador_id', $indicador)
-                ->where('anio_academico_id', $anioId)
-                ->where('curso_academico_id', $cursoActivo)
-                ->exists();
-
-            if (! $exists) {
-                DB::table('indicador_anno')->insert([
-                    'nombre' => DB::table('indicador')->where('id', $indicador)->value('nombre'),
-                    'indicador_id' => $indicador,
-                    'anio_academico_id' => $anioId,
-                    'curso_academico_id' => $cursoActivo,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
-            }
-        }
-
-        // INDICADORES POR CATEGORÍA
-        foreach (array_slice($indicadores, 0, 6) as $indicador) {
-            $categoriaId = $faker->randomElement($categorias);
-
-            $exists = DB::table('indicador_categoria')
-                ->where('indicador_id', $indicador)
-                ->where('categoria_indicador_id', $categoriaId)
-                ->exists();
-
-            if (! $exists) {
-                DB::table('indicador_categoria')->insert([
-                    'indicador_id' => $indicador,
-                    'categoria_indicador_id' => $categoriaId,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
-            }
-        }
-
-        // INDICADORES POR CURSO ACADÉMICO
-        foreach (array_slice($indicadores, 0, 8) as $indicador) {
-            $cursoId = $faker->randomElement($cursosAcademicos);
-
-            $exists = DB::table('indicador_curso')
-                ->where('indicador_id', $indicador)
-                ->where('curso_academico_id', $cursoId)
-                ->exists();
-
-            if (! $exists) {
-                DB::table('indicador_curso')->insert([
-                    'indicador_id' => $indicador,
-                    'curso_academico_id' => $cursoId,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
-            }
-        }
     }
 }

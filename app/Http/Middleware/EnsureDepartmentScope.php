@@ -44,16 +44,6 @@ class EnsureDepartmentScope
     {
         $uri = $request->route()->uri();
 
-        if ($uri === 'api/indicadores/create-and-assign') {
-            return $request->string('especificacion')->toString() === 'departamento'
-                ? collect([$request->integer('departamento_id')])->filter()
-                : collect();
-        }
-
-        if ($uri === 'api/indicadores-carrera') {
-            return $this->forCarrera($request->integer('carrera_id'));
-        }
-
         if ($uri === 'api/planes-estudio') {
             return $this->forCarrera($request->integer('carrera_id'));
         }

@@ -47,7 +47,7 @@ test('read only roles can consult data but cannot write or manage users', functi
     $this->getJson('/api/facultades')->assertOk();
     $this->postJson('/api/facultades', ['nombre' => 'Forbidden faculty'])->assertForbidden();
     $this->deleteJson('/api/indicadores/999999')->assertForbidden();
-    $this->post('/indicadores', [])->assertForbidden();
+    $this->postJson('/api/indicadores', [])->assertForbidden();
     $this->post('/valores', [])->assertForbidden();
     $this->get(route('roles'))->assertForbidden();
     $this->post(route('roles.store'), [])->assertForbidden();
