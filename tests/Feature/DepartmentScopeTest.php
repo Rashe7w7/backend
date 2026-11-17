@@ -40,6 +40,7 @@ test('a department chief cannot spoof ownership to delete a global indicator', f
     $indicator = Indicador::create([
         'nombre' => 'Indicador global',
         'categoria_indicador_id' => $category->id,
+        'especificacion' => 'departamento',
     ]);
 
     $this->actingAs($this->chief)
@@ -70,12 +71,10 @@ test('a future department appointment does not grant write access', function () 
     $category = CategoriaIndicador::create(['nombre' => 'Calidad']);
 
     $this->actingAs($this->chief)
-        ->postJson('/api/indicadores/create-and-assign', [
+        ->postJson('/api/indicadores', [
             'nombre' => 'Indicador anticipado',
-            'categoria_indicador' => $category->id,
+            'categoria_indicador_id' => $category->id,
             'especificacion' => 'departamento',
-            'departamento_id' => $this->department->id,
-            'curso_academico_id' => null,
         ])->assertForbidden();
 
     $this->assertDatabaseMissing('indicador', ['nombre' => 'Indicador anticipado']);

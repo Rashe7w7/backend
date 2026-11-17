@@ -6,9 +6,10 @@ use Illuminate\Support\Facades\DB;
 
 test('application pages render with seeded academic data and lazy loading protection', function () {
     $this->seed(DatabaseSeeder::class);
-    foreach (['indicador', 'baja_estudiante', 'estudiante_ayudante'] as $table) {
+    foreach (['baja_estudiante', 'estudiante_ayudante'] as $table) {
         expect(DB::table($table)->count())->toBeGreaterThan(0);
     }
+    expect(DB::table('indicador')->count())->toBe(0);
 
     $administrator = User::where('role', 'administrador')->firstOrFail();
     $this->actingAs($administrator);

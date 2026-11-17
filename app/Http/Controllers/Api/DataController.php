@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\CreateAndAssignIndicadorRequest;
 use App\Http\Requests\ListAlumnosRequest;
+use App\Http\Requests\StoreIndicadorRequest;
 use App\Models\Alumno;
 use App\Models\AnioAcademico;
 use App\Models\Asignatura;
@@ -17,24 +17,16 @@ use App\Models\Disciplina;
 use App\Models\Facultad;
 use App\Models\Grupo;
 use App\Models\Indicador;
-use App\Models\IndicadorAnio;
-use App\Models\IndicadorCarrera;
-use App\Models\IndicadorDepartamento;
-use App\Models\IndicadorFacultad;
-use App\Models\IndicadorGrupo;
 use App\Models\PlanEstudio;
-use App\Services\IndicadorService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
-use Illuminate\Validation\ValidationException;
 
 class DataController extends Controller
 {
     // Facultades
     public function getFacultades()
     {
-        return response()->json(Facultad::all());
+        return response()->json(Facultad::query()->orderBy('nombre')->get());
     }
 
     public function storeFacultad(Request $request)
@@ -48,7 +40,7 @@ class DataController extends Controller
     // Departamentos
     public function getDepartamentos()
     {
-        return response()->json(Departamento::all());
+        return response()->json(Departamento::query()->orderBy('nombre')->get());
     }
 
     public function storeDepartamento(Request $request)
@@ -66,7 +58,7 @@ class DataController extends Controller
     public function getCarreras()
     {
         try {
-            $carreras = Carrera::all();
+            $carreras = Carrera::query()->orderBy('nombre')->get();
             \Log::info('Carreras obtenidas:', ['count' => count($carreras)]);
 
             return response()->json($carreras);
@@ -82,7 +74,6 @@ class DataController extends Controller
         $validated = $request->validate([
             'nombre' => 'required|string',
             'facultad_id' => 'required|exists:facultad,id',
-            'duracion_anios' => 'required|integer|between:1,5',
         ]);
         $carrera = Carrera::create($validated);
 
@@ -243,48 +234,62 @@ class DataController extends Controller
     // Años Académicos / Cursos Académicos
     public function getAniosAcademicos()
     {
-        return response()->json(CursoAcademico::all());
+        return response()->json(CursoAcademico::query()->orderBy('nombre')->get());
     }
 
     // Función para obtener verdaderos años académicos (1er año, 2do año, etc.)
-    public function getYearsAcademicos(Request $request)
+    public function getYearsAcademicos()
     {
-        return response()->json(AnioAcademico::query()
-            ->with('carrera:id,nombre,duracion_anios')
-            ->when($request->integer('carrera_id'), fn ($query, $id) => $query->where('carrera_id', $id))
+        return response()->json(AnioAcademico::query()->orderBy('nivel')->orderBy('nombre')->get());
+    }
+
+    public function getNivelesAcademicos(): JsonResponse
+    {
+        $niveles = AnioAcademico::query()
+            ->select('nivel')
+            ->distinct()
             ->orderBy('nivel')
-            ->get());
+            ->pluck('nivel')
+            ->map(fn (int $nivel): array => [
+                'id' => $nivel,
+                'nombre' => $nivel.'.º año',
+                'nivel' => $nivel,
+            ])
+            ->values();
+
+        return response()->json($niveles);
     }
 
     public function storeAnioAcademico(Request $request)
     {
         $validated = $request->validate([
-            'nombre' => ['required', 'string'],
+            'nombre' => 'required|string|unique:anio_academico,nombre',
             'carrera_id' => 'required|exists:carrera,id',
-            'nivel' => [
-                'required', 'integer', 'between:1,5',
-                Rule::unique('anio_academico', 'nivel')->where('carrera_id', $request->integer('carrera_id')),
-            ],
+            'nivel' => 'required|integer|between:1,5',
         ]);
-        $duration = Carrera::query()->whereKey($validated['carrera_id'])->value('duracion_anios');
-        if ($duration !== null && $validated['nivel'] > $duration) {
-            throw ValidationException::withMessages(['nivel' => 'El nivel supera la duración registrada de la carrera.']);
-        }
         $anio = AnioAcademico::create($validated);
 
         return response()->json($anio, 201);
     }
 
     // Grupos
-    public function getGrupos(Request $request)
+    public function getGrupos()
     {
-        return response()->json(Grupo::query()
-            ->with(['anioAcademico.carrera:id,nombre,facultad_id', 'cursoAcademico:id,nombre'])
-            ->when($request->integer('carrera_id'), fn ($query, $id) => $query->whereHas('anioAcademico', fn ($year) => $year->where('carrera_id', $id)))
-            ->when($request->integer('anio_academico_id'), fn ($query, $id) => $query->where('anio_academico_id', $id))
-            ->when($request->integer('curso_academico_id'), fn ($query, $id) => $query->where('curso_academico_id', $id))
+        $grupos = Grupo::query()
+            ->with('anioAcademico.carrera')
+            ->orderBy('nombre')
             ->get()
-            ->append('nombre_academico'));
+            ->map(fn (Grupo $grupo): array => [
+                'id' => $grupo->id,
+                'nombre' => $grupo->nombre,
+                'anio_academico_id' => $grupo->anio_academico_id,
+                'contexto' => collect([
+                    $grupo->anioAcademico?->carrera?->nombre,
+                    $grupo->anioAcademico?->nivel ? $grupo->anioAcademico->nivel.'.º año' : null,
+                ])->filter()->join(' — '),
+            ]);
+
+        return response()->json($grupos);
     }
 
     public function storeGrupo(Request $request)
@@ -292,7 +297,6 @@ class DataController extends Controller
         $validated = $request->validate([
             'nombre' => 'required|string',
             'anio_academico_id' => 'required|exists:anio_academico,id',
-            'curso_academico_id' => 'required|exists:curso_academico,id',
         ]);
         $grupo = Grupo::create($validated);
 
@@ -335,7 +339,7 @@ class DataController extends Controller
     // Categorías de Indicador
     public function getCategoriasIndicador()
     {
-        return response()->json(CategoriaIndicador::all());
+        return response()->json(CategoriaIndicador::query()->orderBy('nombre')->get());
     }
 
     public function storeCategoriaIndicador(Request $request)
@@ -349,100 +353,19 @@ class DataController extends Controller
     // Indicadores
     public function getIndicadores()
     {
-        try {
-            $result = collect();
-
-            // Cargar indicadores de carrera
-            $carrera = IndicadorCarrera::with('indicador.categoria')->get()->map(function ($ic) {
-                return [
-                    'id' => $ic->indicador->id,
-                    'nombre' => $ic->nombre,
-                    'categoria_indicador_id' => $ic->indicador->categoria_indicador_id,
-                    'especificacion' => 'carrera',
-                    'created_at' => $ic->indicador->created_at,
-                    'updated_at' => $ic->indicador->updated_at,
-                ];
-            });
-            $result = $result->concat($carrera);
-
-            // Cargar indicadores de grupo
-            $grupo = IndicadorGrupo::with('indicador.categoria')->get()->map(function ($ig) {
-                return [
-                    'id' => $ig->indicador->id,
-                    'nombre' => $ig->nombre,
-                    'categoria_indicador_id' => $ig->indicador->categoria_indicador_id,
-                    'especificacion' => 'grupo',
-                    'created_at' => $ig->indicador->created_at,
-                    'updated_at' => $ig->indicador->updated_at,
-                ];
-            });
-            $result = $result->concat($grupo);
-
-            // Cargar indicadores de facultad
-            $facultad = IndicadorFacultad::with('indicador.categoria')->get()->map(function ($if) {
-                return [
-                    'id' => $if->indicador->id,
-                    'nombre' => $if->nombre,
-                    'categoria_indicador_id' => $if->indicador->categoria_indicador_id,
-                    'especificacion' => 'facultad',
-                    'created_at' => $if->indicador->created_at,
-                    'updated_at' => $if->indicador->updated_at,
-                ];
-            });
-            $result = $result->concat($facultad);
-
-            // Cargar indicadores de departamento
-            $departamento = IndicadorDepartamento::with('indicador.categoria')->get()->map(function ($id) {
-                return [
-                    'id' => $id->indicador->id,
-                    'nombre' => $id->nombre,
-                    'categoria_indicador_id' => $id->indicador->categoria_indicador_id,
-                    'especificacion' => 'departamento',
-                    'created_at' => $id->indicador->created_at,
-                    'updated_at' => $id->indicador->updated_at,
-                ];
-            });
-            $result = $result->concat($departamento);
-
-            // Cargar indicadores de año académico
-            $anno = IndicadorAnio::with('indicador.categoria')->get()->map(function ($ia) {
-                return [
-                    'id' => $ia->indicador->id,
-                    'nombre' => $ia->nombre,
-                    'categoria_indicador_id' => $ia->indicador->categoria_indicador_id,
-                    'especificacion' => 'anno',
-                    'created_at' => $ia->indicador->created_at,
-                    'updated_at' => $ia->indicador->updated_at,
-                ];
-            });
-            $result = $result->concat($anno);
-
-            // Eliminar duplicados (mismo indicador puede estar en múltiples especificaciones)
-            $result = $result->unique('id')->values();
-
-            return response()->json($result);
-        } catch (\Exception $e) {
-            \Log::error('Error en getIndicadores: '.$e->getMessage());
-
-            return response()->json(['error' => 'No se pudieron obtener los indicadores.'], 500);
-        }
+        return response()->json(
+            Indicador::query()
+                ->with('categoria:id,nombre')
+                ->orderBy('nombre')
+                ->get()
+        );
     }
 
-    public function storeIndicador(Request $request)
+    public function storeIndicador(StoreIndicadorRequest $request): JsonResponse
     {
-        // Crear solo el indicador padre; la asignación a entidad específica
-        // se hará en pasos posteriores cuando el usuario seleccione destino
-        $validated = $request->validate([
-            'nombre' => 'required|string|unique:indicador,nombre',
-            'especificacion' => 'required|string|in:grupo,facultad,departamento,carrera,anno',
-        ]);
+        $indicador = Indicador::query()->create($request->validated());
 
-        $indicador = Indicador::create(['nombre' => $validated['nombre']]);
-
-        $response = $indicador->toArray();
-        $response['especificacion'] = strtolower($validated['especificacion']);
-
-        return response()->json($response, 201);
+        return response()->json($indicador->load('categoria:id,nombre'), 201);
     }
 
     public function destroyIndicador($id)
@@ -456,64 +379,5 @@ class DataController extends Controller
         $indicador->delete();
 
         return response()->json(['message' => 'Indicador eliminado correctamente'], 200);
-    }
-
-    // Indicadores por Carrera
-    public function getIndicadoresCarrera(Request $request)
-    {
-        $validated = $request->validate([
-            'carrera_id' => 'required|integer|exists:carrera,id',
-            'curso_academico_id' => 'required|integer|exists:curso_academico,id',
-        ]);
-
-        $rows = IndicadorCarrera::with('indicador')
-            ->where('carrera_id', $validated['carrera_id'])
-            ->where('curso_academico_id', $validated['curso_academico_id'])
-            ->get()
-            ->map(function ($r) {
-                return [
-                    'id' => $r->id,
-                    'indicador_id' => $r->indicador_id,
-                    'nombre' => $r->indicador->nombre ?? null,
-                    'carrera_id' => $r->carrera_id,
-                    'curso_academico_id' => $r->curso_academico_id,
-                ];
-            });
-
-        return response()->json($rows);
-    }
-
-    public function storeIndicadoresCarrera(Request $request)
-    {
-        $validated = $request->validate([
-            'indicador_id' => 'required|integer|exists:indicador,id',
-            'carrera_id' => 'required|integer|exists:carrera,id',
-            'curso_academico_id' => 'required|integer|exists:curso_academico,id',
-        ]);
-
-        // Evitar duplicados para misma combinación
-        $exists = IndicadorCarrera::where('indicador_id', $validated['indicador_id'])
-            ->where('carrera_id', $validated['carrera_id'])
-            ->where('curso_academico_id', $validated['curso_academico_id'])
-            ->first();
-
-        if ($exists) {
-            return response()->json($exists, 200);
-        }
-
-        $validated['nombre'] = Indicador::findOrFail($validated['indicador_id'])->nombre;
-        $row = IndicadorCarrera::create($validated);
-
-        return response()->json($row, 201);
-    }
-
-    /**
-     * Crear indicador y asignarlo a su especificación en un solo paso
-     */
-    public function createAndAssignIndicador(CreateAndAssignIndicadorRequest $request, IndicadorService $service): JsonResponse
-    {
-        $indicador = $service->createAndAssign($request->validated());
-
-        return response()->json($indicador, 201);
     }
 }
