@@ -1,25 +1,27 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
     public function up(): void
     {
-        // Crear la carrera Informática si no existe
-        $carreraId = DB::table('carrera')->insertOrIgnore([
-            'nombre' => 'Ingeniería Informática',
-            'facultad_id' => 1,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+        $carrera = DB::table('carrera')->where('nombre', 'Ingeniería Informática')->first();
 
-        // Si insertOrIgnore no retorna el ID, obtenerlo
-        if (!$carreraId) {
-            $carrera = DB::table('carrera')->where('nombre', 'Ingeniería Informática')->first();
+        if (! $carrera) {
+            $facultad = DB::table('facultad')->first();
+            if (! $facultad) {
+                return;
+            }
+
+            $carreraId = DB::table('carrera')->insertGetId([
+                'nombre' => 'Ingeniería Informática',
+                'facultad_id' => $facultad->id,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        } else {
             $carreraId = $carrera->id;
         }
 
@@ -34,11 +36,11 @@ return new class extends Migration
                 ->where('nombre', $nombre)
                 ->first();
 
-            if (!$planExistente) {
+            if (! $planExistente) {
                 $planId = DB::table('plan_estudio')->insertGetId([
                     'nombre' => $nombre,
                     'carrera_id' => $carreraId,
-                    'fecha_inicio' => (2020 + $index) . '-09-01',
+                    'fecha_inicio' => (2020 + $index).'-09-01',
                     'fecha_fin' => null,
                     'vigente' => $index == 3,
                     'created_at' => now(),

@@ -3,19 +3,23 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class AnioAcademico extends Model
 {
     protected $table = 'anio_academico';
-    protected $fillable = ['nombre', 'carrera_id'];
+
+    protected $fillable = ['nombre', 'carrera_id', 'nivel'];
+
     public $timestamps = true;
 
-    public function carrera()
+    public function carrera(): BelongsTo
     {
         return $this->belongsTo(Carrera::class, 'carrera_id');
     }
 
-    public function grupos()
+    public function grupos(): HasMany
     {
         return $this->hasMany(Grupo::class, 'anio_academico_id');
     }
@@ -32,12 +36,9 @@ class AnioAcademico extends Model
 
     public function bajas()
     {
-        return $this->hasManyThrough(
-            BajaEstudiante::class,
-            Alumno::class,
-            'grupo_id',
-            'alumno_id'
-        );
+        return BajaEstudiante::query()->whereHas('alumno.grupo', function ($query) {
+            $query->where('anio_academico_id', $this->getKey());
+        });
     }
 
     public function indicadores()
@@ -50,4 +51,3 @@ class AnioAcademico extends Model
         return $this->belongsToMany(Asignatura::class, 'anio_asignatura', 'anio_academico_id', 'asignatura_id');
     }
 }
-

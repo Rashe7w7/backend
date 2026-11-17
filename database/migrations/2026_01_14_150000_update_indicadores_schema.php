@@ -23,17 +23,18 @@ return new class extends Migration
         // Modificar tabla indicador
         Schema::table('indicador', function (Blueprint $table) {
             // Agregar el campo tipo
-            if (!Schema::hasColumn('indicador', 'tipo')) {
+            if (! Schema::hasColumn('indicador', 'tipo')) {
                 $table->enum('tipo', ['grupo', 'ano_academico', 'facultad'])->default('grupo')->after('nombre');
             }
-            
+
             // Eliminar la foreign key y la columna fuente si existen
             if (Schema::hasColumn('indicador', 'fuente')) {
                 $table->dropColumn('fuente');
             }
-            
+
             if (Schema::hasColumn('indicador', 'categoria_indicador_id')) {
                 $table->dropForeign(['categoria_indicador_id']);
+                $table->dropIndex(['categoria_indicador_id']);
                 $table->dropColumn('categoria_indicador_id');
             }
         });
@@ -45,7 +46,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::dropIfExists('indicador_categoria_indicador');
-        
+
         Schema::table('indicador', function (Blueprint $table) {
             $table->dropColumn('tipo');
             $table->enum('fuente', ['baja_estudiante', 'evaluacion_integral'])->after('nombre');

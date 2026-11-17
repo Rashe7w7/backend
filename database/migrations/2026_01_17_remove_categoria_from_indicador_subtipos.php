@@ -15,30 +15,35 @@ return new class extends Migration
     {
         if (Schema::hasTable('indicador_carrera') && Schema::hasColumn('indicador_carrera', 'categoria_indicador_id')) {
             Schema::table('indicador_carrera', function (Blueprint $table) {
+                $table->dropForeign(['categoria_indicador_id']);
                 $table->dropColumn('categoria_indicador_id');
             });
         }
 
         if (Schema::hasTable('indicador_grupo') && Schema::hasColumn('indicador_grupo', 'categoria_indicador_id')) {
             Schema::table('indicador_grupo', function (Blueprint $table) {
+                $table->dropForeign(['categoria_indicador_id']);
                 $table->dropColumn('categoria_indicador_id');
             });
         }
 
         if (Schema::hasTable('indicador_facultad') && Schema::hasColumn('indicador_facultad', 'categoria_indicador_id')) {
             Schema::table('indicador_facultad', function (Blueprint $table) {
+                $table->dropForeign(['categoria_indicador_id']);
                 $table->dropColumn('categoria_indicador_id');
             });
         }
 
         if (Schema::hasTable('indicador_departamento') && Schema::hasColumn('indicador_departamento', 'categoria_indicador_id')) {
             Schema::table('indicador_departamento', function (Blueprint $table) {
+                $table->dropForeign(['categoria_indicador_id']);
                 $table->dropColumn('categoria_indicador_id');
             });
         }
 
         if (Schema::hasTable('indicador_anno') && Schema::hasColumn('indicador_anno', 'categoria_indicador_id')) {
             Schema::table('indicador_anno', function (Blueprint $table) {
+                $table->dropForeign(['categoria_indicador_id']);
                 $table->dropColumn('categoria_indicador_id');
             });
         }

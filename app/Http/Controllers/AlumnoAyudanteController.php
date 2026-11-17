@@ -2,31 +2,46 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreAlumnoAyudanteRequest;
 use App\Models\Alumno;
 use App\Models\AlumnoAyudante;
 use App\Models\Asignatura;
-use App\Models\Profesor;
+use App\Models\CursoAcademico;
 use App\Models\Grupo;
-use App\Models\AnioAcademico;
+use App\Models\Profesor;
+use App\Services\AcademicScopeService;
+use App\Services\AlumnoAyudanteService;
+use App\Services\AuditService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\View\View;
 
 class AlumnoAyudanteController extends Controller
 {
-    public function index()
+    public function index(Request $request, AcademicScopeService $scopeService): View
     {
-        $alumnos = Alumno::all();
-        $asignaturas = Asignatura::all();
-        $profesores = Profesor::all();
-        $grupos = Grupo::all();
-        $cursosAcademicos = \App\Models\CursoAcademico::all();
-        
+        abort_unless($request->user()->isAdministrator() || $request->user()->hasRole('ppa'), 403);
+
+        $grupos = Grupo::query()->with('anioAcademico.carrera')
+            ->when(! $request->user()->isAdministrator(), fn ($query) => $query->whereHas(
+                'asignacionesPpa',
+                fn ($assignments) => $assignments->where('user_id', $request->user()->id)->where('activo', true),
+            ))->get();
+        $groupIds = $grupos->pluck('id');
+        $alumnos = Alumno::query()->whereIn('grupo_id', $groupIds)->orderBy('nombre')->get();
+        $asignaturas = Asignatura::query()->orderBy('nombre')->get();
+        $profesores = Profesor::query()->orderBy('nombre')->get();
+        $cursosAcademicos = CursoAcademico::all();
+
         // Cargar los alumnos ayudantes con sus relaciones
         $alumnosAyudantes = AlumnoAyudante::with([
             'alumno',
             'profesorAsignatura.profesor',
             'profesorAsignatura.asignatura',
-            'cursoAcademico'
-        ])->get();
+            'cursoAcademico',
+            'grupo.anioAcademico.carrera',
+        ])->when(! $request->user()->isAdministrator(), fn ($query) => $query->whereIn('grupo_id', $groupIds))->get();
 
         return view('tables.alumnoayudante', compact(
             'alumnos',
@@ -49,82 +64,47 @@ class AlumnoAyudanteController extends Controller
         AlumnoAyudante::create($request->only([
             'alumno_id',
             'profesor_asignatura_id',
-            'curso_academico_id'
+            'curso_academico_id',
         ]));
 
         return redirect()->route('alumnoayudante')->with('success', 'Alumno ayudante asignado correctamente');
     }
 
-    public function storeFromForm(Request $request)
+    public function storeFromForm(StoreAlumnoAyudanteRequest $request, AlumnoAyudanteService $service): JsonResponse
     {
-        try {
-            // Log de los datos recibidos
-            \Log::info('Datos recibidos en alumnoayudante:', $request->all());
+        $alumnoAyudante = $service->create($request->user(), $request->validated());
 
-            // Validar que el alumno existe
-            $alumno = Alumno::findOrFail($request->alumno_id);
-            
-            // Validar grupo si se proporciona
-            if ($request->grupo_id) {
-                $grupo = Grupo::findOrFail($request->grupo_id);
-            }
-            
-            // Obtener asignatura, profesor y curso académico
-            $asignatura = Asignatura::findOrFail($request->asignatura_id);
-            $profesor = Profesor::findOrFail($request->profesor_id);
-            $cursoAcademico = \App\Models\CursoAcademico::findOrFail($request->curso_academico_id);
-
-            // VALIDAR que la relación profesor_asignatura EXISTE
-            $profesorAsignatura = \App\Models\ProfesorAsignatura::where('profesor_id', $profesor->id)
-                ->where('asignatura_id', $asignatura->id)
-                ->first();
-
-            if (!$profesorAsignatura) {
-                throw new \Exception("El profesor {$profesor->nombre} no dicta la asignatura {$asignatura->nombre}");
-            }
-                        // VALIDAR que no exista ya el mismo alumno como ayudante en esta asignatura y año
-            $existe = AlumnoAyudante::where('alumno_id', $alumno->id)
-                ->where('profesor_asignatura_id', $profesorAsignatura->id)
-                ->where('curso_academico_id', $request->curso_academico_id)
-                ->exists();
-
-            if ($existe) {
-                throw new \Exception("El alumno {$alumno->nombre} ya está registrado como ayudante en la asignatura {$asignatura->nombre} para el período {$cursoAcademico->nombre}");
-            }
-                        // Crear registro en estudiante_ayudante
-            $alumnoAyudante = AlumnoAyudante::create([
-                'alumno_id' => $alumno->id,
-                'profesor_asignatura_id' => $profesorAsignatura->id,
-                'curso_academico_id' => $request->curso_academico_id,
-            ]);
-
-            \Log::info('Alumno ayudante creado exitosamente:', ['id' => $alumnoAyudante->id]);
-            return response()->json(['success' => true, 'message' => 'Designación guardada correctamente', 'id' => $alumnoAyudante->id]);
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            \Log::error('Error ModelNotFoundException: ' . $e->getMessage());
-            return response()->json(['error' => 'Recurso no encontrado: ' . $e->getMessage()], 400);
-        } catch (\Exception $e) {
-            \Log::error('Error en storeFromForm: ' . $e->getMessage());
-            return response()->json(['error' => $e->getMessage()], 400);
-        }
+        return response()->json([
+            'success' => true,
+            'message' => 'Designación guardada correctamente',
+            'id' => $alumnoAyudante->id,
+        ], 201);
     }
 
-    public function destroy($id)
+    public function destroy(Request $request, int $id, AcademicScopeService $scopeService, AuditService $audit): JsonResponse|RedirectResponse
     {
         try {
             $alumnoAyudante = AlumnoAyudante::findOrFail($id);
-            $alumnoAyudante->delete();
+            abort_unless(
+                $request->user()->isAdministrator()
+                || ($alumnoAyudante->grupo_id !== null && $scopeService->canAccess($request->user(), 'grupo', $alumnoAyudante->grupo_id)),
+                403,
+            );
+            $before = $alumnoAyudante->attributesToArray();
+            $alumnoAyudante->update(['estado' => 'inactivo']);
+            $audit->recordModel('alumno_ayudante.desactivado', $alumnoAyudante, $before);
 
             // Si es petición AJAX, retornar JSON
             if (request()->wantsJson()) {
                 return response()->json(['success' => true, 'message' => 'Alumno ayudante eliminado correctamente']);
             }
-            
+
             return redirect()->route('alumnoayudante')->with('success', 'Alumno ayudante eliminado correctamente');
         } catch (\Exception $e) {
             if (request()->wantsJson()) {
-                return response()->json(['error' => $e->getMessage()], 400);
+                return response()->json(['error' => 'No se pudo eliminar la designación.'], 400);
             }
+
             return redirect()->route('alumnoayudante')->with('error', 'Error al eliminar');
         }
     }
@@ -147,6 +127,7 @@ class AlumnoAyudanteController extends Controller
     public function getAsignaturasByProfesor($profesorId)
     {
         $profesor = Profesor::with('asignaturas')->findOrFail($profesorId);
+
         return response()->json($profesor->asignaturas);
     }
 }

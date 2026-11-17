@@ -2,23 +2,25 @@
 
 namespace App\Console\Commands;
 
-use Illuminate\Console\Command;
-use Illuminate\Support\Facades\DB;
 use App\Models\Carrera;
 use App\Models\PlanEstudio;
+use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
 
 class UpdatePlanesEstudio extends Command
 {
     protected $signature = 'planes:update-informatica';
+
     protected $description = 'Actualiza los planes de estudio de Informática con nombres a, b, c, d';
 
     public function handle()
     {
         // Encontrar la carrera de Informática
-        $carrera = Carrera::where('nombre', 'like', '%Informatica%')->first();
-        
-        if (!$carrera) {
+        $carrera = Carrera::query()->whereLike('nombre', '%Informatica%')->first();
+
+        if (! $carrera) {
             $this->error('No se encontró la carrera Informática');
+
             return 1;
         }
 
@@ -33,12 +35,12 @@ class UpdatePlanesEstudio extends Command
                 ->where('nombre', $nombre)
                 ->first();
 
-            if (!$plan) {
+            if (! $plan) {
                 // Crear nuevo plan
                 $plan = PlanEstudio::create([
                     'nombre' => $nombre,
                     'carrera_id' => $carrera->id,
-                    'fecha_inicio' => (2020 + $index) . '-09-01',
+                    'fecha_inicio' => (2020 + $index).'-09-01',
                     'fecha_fin' => null,
                     'vigente' => $index == 3, // El último es vigente
                 ]);
@@ -57,7 +59,7 @@ class UpdatePlanesEstudio extends Command
                 ->where('plan_estudio_id', $planId)
                 ->exists();
 
-            if (!$exists) {
+            if (! $exists) {
                 DB::table('carrera_plan')->insert([
                     'carrera_id' => $carrera->id,
                     'plan_estudio_id' => $planId,
@@ -83,6 +85,7 @@ class UpdatePlanesEstudio extends Command
         }
 
         $this->info("\n¡Actualización completada!");
+
         return 0;
     }
 }

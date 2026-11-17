@@ -3,16 +3,25 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Carrera extends Model
 {
     protected $table = 'carrera';
-    protected $fillable = ['nombre', 'facultad_id'];
+
+    protected $fillable = ['nombre', 'facultad_id', 'duracion_anios'];
+
     public $timestamps = true;
 
-    public function facultad()
+    public function facultad(): BelongsTo
     {
         return $this->belongsTo(Facultad::class, 'facultad_id');
+    }
+
+    public function nivelesAcademicos(): HasMany
+    {
+        return $this->hasMany(AnioAcademico::class, 'carrera_id')->orderBy('nivel');
     }
 
     public function planesEstudio()

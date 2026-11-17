@@ -7,18 +7,6 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // Marcar la migración anterior como ejecutada en la base de datos si no lo está
-        $exists = DB::table('migrations')
-            ->where('migration', '2026_01_19_create_anio_asignatura_table')
-            ->exists();
-
-        if (!$exists) {
-            DB::table('migrations')->insert([
-                'migration' => '2026_01_19_create_anio_asignatura_table',
-                'batch' => DB::table('migrations')->max('batch') + 1,
-            ]);
-        }
-
         // Poblar la tabla anio_asignatura con datos
         // Obtener años académicos y asignaturas
         $aniosAcademicos = DB::table('anio_academico')->get();
@@ -33,7 +21,7 @@ return new class extends Migration
                         ->where('asignatura_id', $asignatura->id)
                         ->exists();
 
-                    if (!$exists) {
+                    if (! $exists) {
                         DB::table('anio_asignatura')->insert([
                             'anio_academico_id' => $anio->id,
                             'asignatura_id' => $asignatura->id,

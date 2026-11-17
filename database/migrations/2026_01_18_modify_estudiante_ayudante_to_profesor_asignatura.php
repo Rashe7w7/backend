@@ -43,8 +43,8 @@ return new class extends Migration
 
         Schema::table('estudiante_ayudante', function (Blueprint $table) {
             // Restaurar las columnas de fechas y asignatura_id
-            $table->foreignId('asignatura_id')->constrained('asignatura')->cascadeOnDelete();
-            $table->dateTime('fecha_inicio');
+            $table->foreignId('asignatura_id')->nullable()->constrained('asignatura')->cascadeOnDelete();
+            $table->dateTime('fecha_inicio')->nullable();
             $table->dateTime('fecha_fin')->nullable();
         });
     }

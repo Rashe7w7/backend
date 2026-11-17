@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Alumno extends Model
@@ -10,10 +12,12 @@ class Alumno extends Model
     use SoftDeletes;
 
     protected $table = 'estudiante';
-    protected $fillable = ['nombre', 'email', 'grupo_id', 'carrera'];
+
+    protected $fillable = ['identificador_institucional', 'nombre', 'email', 'grupo_id', 'carrera'];
+
     public $timestamps = true;
 
-    public function grupo()
+    public function grupo(): BelongsTo
     {
         return $this->belongsTo(Grupo::class, 'grupo_id');
     }
@@ -23,8 +27,8 @@ class Alumno extends Model
         return $this->hasMany(BajaEstudiante::class, 'alumno_id');
     }
 
-    public function alumnoAyudante()
+    public function alumnoAyudante(): HasMany
     {
-        return $this->hasMany(EstudianteAyudante::class, 'alumno_id');
+        return $this->hasMany(AlumnoAyudante::class, 'alumno_id');
     }
 }

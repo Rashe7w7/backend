@@ -4,19 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Crear Solicitud de Modificación - Sistema Académico</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        primary: '#f97316',
-                        'primary-dark': '#ea580c',
-                    }
-                }
-            }
-        }
-    </script>
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
         
         * {
@@ -664,7 +652,7 @@
         }
     </style>
 </head>
-<body class="bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
+<body class="academic-ui bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
     
     <!-- ====================================
          ENCABEZADO PRINCIPAL DEL SISTEMA

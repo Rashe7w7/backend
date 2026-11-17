@@ -1,7 +1,5 @@
 <?php
 
-test('returns a successful response', function () {
-    $response = $this->get(route('home'));
-
-    $response->assertStatus(200);
+test('the login page is available', function () {
+    $this->get(route('login'))->assertOk();
 });

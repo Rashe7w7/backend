@@ -3,15 +3,20 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 
 class User extends Authenticatable
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
+    /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable, TwoFactorAuthenticatable;
 
     /**
@@ -23,7 +28,66 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'role',
+        'profesor_id',
     ];
+
+    public const ROLES = [
+        'administrador', 'ppa', 'jefe_departamento', 'rector',
+        'vicerrector', 'decano', 'secretaria',
+    ];
+
+    public function profesor(): BelongsTo
+    {
+        return $this->belongsTo(Profesor::class);
+    }
+
+    public function roles(): BelongsToMany
+    {
+        return $this->belongsToMany(Role::class)->withTimestamps();
+    }
+
+    public function asignacionesPpa(): HasMany
+    {
+        return $this->hasMany(AsignacionPpa::class);
+    }
+
+    public function alcancesAcademicos(): HasMany
+    {
+        return $this->hasMany(AlcanceUsuario::class);
+    }
+
+    public function hasRole(string $role): bool
+    {
+        if ($this->role === $role) {
+            return true;
+        }
+
+        return $this->roles()->where('slug', $role)->exists();
+    }
+
+    public function isAdministrator(): bool
+    {
+        return $this->hasRole('administrador');
+    }
+
+    public function canWriteAcademicData(): bool
+    {
+        return $this->isAdministrator() || $this->hasRole('jefe_departamento');
+    }
+
+    public function departmentIds(): Collection
+    {
+        if (! $this->profesor_id) {
+            return collect();
+        }
+
+        return JefeDepartamento::query()
+            ->where('profesor_id', $this->profesor_id)
+            ->where('fecha_inicio', '<=', now())
+            ->where(fn ($query) => $query->whereNull('fecha_fin')->orWhere('fecha_fin', '>=', now()))
+            ->pluck('departamento_id');
+    }
 
     /**
      * The attributes that should be hidden for serialization.

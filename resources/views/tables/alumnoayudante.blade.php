@@ -6,9 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Sistema PPA - Alumnos Ayudantes</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="bg-white min-h-screen flex">
+<body class="academic-ui bg-white min-h-screen flex">
 
     <!-- ==================== SIDEBAR ==================== -->
     <aside class="w-60 bg-gray-100 p-6 min-h-screen border-r border-gray-300">
@@ -74,10 +74,13 @@
                 <thead class="bg-orange-500 text-white">
                     <tr>
                         <th class="px-4 py-3 text-left">Estudiante</th>
-                        <th class="px-4 py-3 text-left">Ano</th>
+                        <th class="px-4 py-3 text-left">Carrera</th>
+                        <th class="px-4 py-3 text-left">Año</th>
                         <th class="px-4 py-3 text-left">Grupo</th>
                         <th class="px-4 py-3 text-left">Asignatura</th>
                         <th class="px-4 py-3 text-left">Profesor</th>
+                        <th class="px-4 py-3 text-left">Curso</th>
+                        <th class="px-4 py-3 text-left">Estado</th>
                         <th class="px-4 py-3 text-left">Accion</th>
                     </tr>
                 </thead>
@@ -88,13 +91,16 @@
                             <div class="font-medium text-gray-800">{{ $aa->alumno->nombre }}</div>
                             <div class="text-sm text-gray-500">{{ $aa->alumno->email }}</div>
                         </td>
-                        <td class="px-4 py-3 text-gray-700">{{ $aa->cursoAcademico->nombre ?? 'N/A' }}</td>
-                        <td class="px-4 py-3 text-gray-700">-</td>
+                        <td class="px-4 py-3 text-gray-700">{{ $aa->grupo?->anioAcademico?->carrera?->nombre ?? 'N/A' }}</td>
+                        <td class="px-4 py-3 text-gray-700">{{ $aa->grupo?->anioAcademico?->nivel ?? $aa->grupo?->anioAcademico?->nombre ?? 'N/A' }}</td>
+                        <td class="px-4 py-3 text-gray-700">{{ $aa->grupo?->nombre ?? 'N/A' }}</td>
                         <td class="px-4 py-3 text-gray-700">{{ $aa->profesorAsignatura->asignatura->nombre ?? 'N/A' }}</td>
                         <td class="px-4 py-3 text-gray-700">{{ $aa->profesorAsignatura->profesor->nombre ?? 'N/A' }}</td>
+                        <td class="px-4 py-3 text-gray-700">{{ $aa->cursoAcademico->nombre ?? 'N/A' }}</td>
+                        <td class="px-4 py-3 text-gray-700">{{ str($aa->estado)->title() }}</td>
                         <td class="px-4 py-3">
                             <button onclick="eliminarFila(this)" class="text-red-500 hover:text-red-700 font-medium">
-                                Eliminar
+                                Desactivar
                             </button>
                         </td>
                     </tr>
@@ -148,10 +154,12 @@
                     <select id="grupo" class="w-full px-3 py-2 border-2 border-orange-300 rounded-lg">
                         <option value="">Seleccione un grupo</option>
                         @foreach($grupos as $grupo)
-                            <option value="{{ $grupo->id }}">{{ $grupo->nombre }}</option>
+                            <option value="{{ $grupo->id }}">{{ $grupo->nombre_academico }}</option>
                         @endforeach
                     </select>
                 </div>
+                <div><label class="block text-orange-600 font-medium mb-1">Fecha de designación</label><input id="fecha_designacion" type="date" value="{{ now()->toDateString() }}" class="w-full px-3 py-2 border-2 border-orange-300 rounded-lg"></div>
+                <div><label class="block text-orange-600 font-medium mb-1">Estado</label><select id="estado" class="w-full px-3 py-2 border-2 border-orange-300 rounded-lg"><option value="activo">Activo</option><option value="inactivo">Inactivo</option></select></div>
             </div>
 
             <!-- Botones Modal -->
@@ -266,7 +274,9 @@
                         asignatura_id: parseInt(asignaturaId),
                         profesor_id: parseInt(profesorId),
                         grupo_id: grupoId ? parseInt(grupoId) : null,
-                        curso_academico_id: parseInt(cursoAcademicoId)
+                        curso_academico_id: parseInt(cursoAcademicoId),
+                        fecha_designacion: document.getElementById('fecha_designacion').value,
+                        estado: document.getElementById('estado').value
                     })
                 });
 

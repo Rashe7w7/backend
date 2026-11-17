@@ -1,0 +1,12 @@
+@import 'tailwindcss';
+@import './academic.css';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+@source '../views/**/*.blade.php';
+@source '../js/**/*.js';
+
+@theme {
+    --color-primary: #f97316;
+    --color-primary-dark: #ea580c;
+}
