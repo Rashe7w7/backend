@@ -5,129 +5,155 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreAlumnoAyudanteRequest;
 use App\Models\Alumno;
 use App\Models\AlumnoAyudante;
-use App\Models\Asignatura;
-use App\Models\CursoAcademico;
-use App\Models\Grupo;
+use App\Models\AnioAcademico;
 use App\Models\Profesor;
-use App\Services\AcademicScopeService;
-use App\Services\AlumnoAyudanteService;
-use App\Services\AuditService;
+use App\Models\ProfesorAsignatura;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\View\View;
 
 class AlumnoAyudanteController extends Controller
 {
-    public function index(Request $request, AcademicScopeService $scopeService): View
+    public function index(): View
     {
-        abort_unless($request->user()->isAdministrator() || $request->user()->hasRole('ppa'), 403);
+        Gate::authorize('view-student-helpers');
 
-        $grupos = Grupo::query()->with('anioAcademico.carrera')
-            ->when(! $request->user()->isAdministrator(), fn ($query) => $query->whereHas(
-                'asignacionesPpa',
-                fn ($assignments) => $assignments->where('user_id', $request->user()->id)->where('activo', true),
-            ))->get();
-        $groupIds = $grupos->pluck('id');
-        $alumnos = Alumno::query()->whereIn('grupo_id', $groupIds)->orderBy('nombre')->get();
-        $asignaturas = Asignatura::query()->orderBy('nombre')->get();
-        $profesores = Profesor::query()->orderBy('nombre')->get();
-        $cursosAcademicos = CursoAcademico::all();
+        $alumnos = Alumno::query()
+            ->with('grupo.anioAcademico.carrera.facultad')
+            ->orderBy('nombre')
+            ->get();
 
-        // Cargar los alumnos ayudantes con sus relaciones
-        $alumnosAyudantes = AlumnoAyudante::with([
-            'alumno',
+        $profesorAsignaturas = ProfesorAsignatura::query()
+            ->with(['asignatura', 'profesor', 'cursoAcademico'])
+            ->whereNotNull('curso_academico_id')
+            ->get()
+            ->sortBy([
+                ['asignatura.nombre', 'asc'],
+                ['profesor.nombre', 'asc'],
+            ]);
+
+        $alumnosAyudantes = AlumnoAyudante::query()->with([
+            'alumno.grupo.anioAcademico.carrera.facultad',
             'profesorAsignatura.profesor',
             'profesorAsignatura.asignatura',
             'cursoAcademico',
-            'grupo.anioAcademico.carrera',
-        ])->when(! $request->user()->isAdministrator(), fn ($query) => $query->whereIn('grupo_id', $groupIds))->get();
+        ])->latest()->paginate(25)->withQueryString();
+
+        [$reportesCarrera, $reportesFacultad, $reportesAnio] = $this->reportes();
 
         return view('tables.alumnoayudante', compact(
             'alumnos',
-            'asignaturas',
-            'profesores',
-            'grupos',
-            'cursosAcademicos',
-            'alumnosAyudantes'
+            'profesorAsignaturas',
+            'alumnosAyudantes',
+            'reportesCarrera',
+            'reportesFacultad',
+            'reportesAnio',
         ));
     }
 
-    public function store(Request $request)
+    public function store(StoreAlumnoAyudanteRequest $request): RedirectResponse
     {
-        $request->validate([
-            'alumno_id' => 'required|exists:estudiante,id',
-            'profesor_asignatura_id' => 'required|exists:profesor_asignatura,id',
-            'curso_academico_id' => 'required|exists:curso_academico,id',
+        $validated = $request->validated();
+        $profesorAsignatura = ProfesorAsignatura::query()->findOrFail($validated['profesor_asignatura_id']);
+
+        AlumnoAyudante::query()->create([
+            'alumno_id' => $validated['alumno_id'],
+            'profesor_asignatura_id' => $profesorAsignatura->id,
+            'curso_academico_id' => $profesorAsignatura->curso_academico_id,
         ]);
 
-        AlumnoAyudante::create($request->only([
-            'alumno_id',
-            'profesor_asignatura_id',
-            'curso_academico_id',
-        ]));
-
-        return redirect()->route('alumnoayudante')->with('success', 'Alumno ayudante asignado correctamente');
+        return redirect()->route('alumnoayudante')->with('success', 'Alumno ayudante designado correctamente.');
     }
 
-    public function storeFromForm(StoreAlumnoAyudanteRequest $request, AlumnoAyudanteService $service): JsonResponse
+    public function destroy(int $id): JsonResponse|RedirectResponse
     {
-        $alumnoAyudante = $service->create($request->user(), $request->validated());
+        Gate::authorize('delete-student-helpers');
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Designación guardada correctamente',
-            'id' => $alumnoAyudante->id,
-        ], 201);
-    }
+        $alumnoAyudante = AlumnoAyudante::query()->findOrFail($id);
+        $alumnoAyudante->delete();
 
-    public function destroy(Request $request, int $id, AcademicScopeService $scopeService, AuditService $audit): JsonResponse|RedirectResponse
-    {
-        try {
-            $alumnoAyudante = AlumnoAyudante::findOrFail($id);
-            abort_unless(
-                $request->user()->isAdministrator()
-                || ($alumnoAyudante->grupo_id !== null && $scopeService->canAccess($request->user(), 'grupo', $alumnoAyudante->grupo_id)),
-                403,
-            );
-            $before = $alumnoAyudante->attributesToArray();
-            $alumnoAyudante->update(['estado' => 'inactivo']);
-            $audit->recordModel('alumno_ayudante.desactivado', $alumnoAyudante, $before);
-
-            // Si es petición AJAX, retornar JSON
-            if (request()->wantsJson()) {
-                return response()->json(['success' => true, 'message' => 'Alumno ayudante eliminado correctamente']);
-            }
-
-            return redirect()->route('alumnoayudante')->with('success', 'Alumno ayudante eliminado correctamente');
-        } catch (\Exception $e) {
-            if (request()->wantsJson()) {
-                return response()->json(['error' => 'No se pudo eliminar la designación.'], 400);
-            }
-
-            return redirect()->route('alumnoayudante')->with('error', 'Error al eliminar');
+        if (request()->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Alumno ayudante eliminado correctamente',
+            ]);
         }
+
+        return redirect()->route('alumnoayudante')->with('success', 'Alumno ayudante eliminado correctamente');
     }
 
-    /**
-     * API para obtener profesores según asignatura seleccionada
-     */
-    public function getProfesoresByAsignatura($asignaturaId)
+    public function getProfesoresByAsignatura(int $asignaturaId): JsonResponse
     {
-        $profesores = Profesor::whereHas('asignaturas', function ($query) use ($asignaturaId) {
-            $query->where('asignatura_id', $asignaturaId);
-        })->get();
+        $profesores = Profesor::query()
+            ->whereHas('asignaturas', fn (Builder $query): Builder => $query->where('asignatura_id', $asignaturaId))
+            ->get();
 
         return response()->json($profesores);
     }
 
-    /**
-     * API para obtener asignaturas según profesor seleccionado
-     */
-    public function getAsignaturasByProfesor($profesorId)
+    public function getAsignaturasByProfesor(int $profesorId): JsonResponse
     {
-        $profesor = Profesor::with('asignaturas')->findOrFail($profesorId);
+        $profesor = Profesor::query()->with('asignaturas')->findOrFail($profesorId);
 
         return response()->json($profesor->asignaturas);
+    }
+
+    /**
+     * @return array{Collection<int, array<string, int|float|string>>, Collection<int, array<string, int|float|string>>, Collection<int, array<string, int|float|string>>}
+     */
+    private function reportes(): array
+    {
+        $anios = AnioAcademico::query()
+            ->with('carrera.facultad')
+            ->withCount([
+                'alumnos as total_alumnos',
+                'alumnos as total_ayudantes' => fn (Builder $query): Builder => $query->whereHas('alumnoAyudante'),
+            ])
+            ->orderBy('nivel')
+            ->get();
+
+        $crearFila = fn (string $nombre, int $ayudantes, int $alumnos): array => [
+            'nombre' => $nombre,
+            'total' => $ayudantes,
+            'alumnos' => $alumnos,
+            'porcentaje' => $alumnos > 0 ? round(($ayudantes / $alumnos) * 100, 2) : 0.0,
+        ];
+
+        $reportesAnio = $anios->map(fn (AnioAcademico $anio): array => $crearFila(
+            $anio->nombre,
+            (int) $anio->total_ayudantes,
+            (int) $anio->total_alumnos,
+        ))->values();
+
+        $reportesCarrera = $anios
+            ->filter(fn (AnioAcademico $anio): bool => $anio->carrera !== null)
+            ->groupBy('carrera_id')
+            ->map(function (Collection $aniosCarrera) use ($crearFila): array {
+                $carrera = $aniosCarrera->first()->carrera;
+
+                return $crearFila(
+                    $carrera->nombre,
+                    (int) $aniosCarrera->sum('total_ayudantes'),
+                    (int) $aniosCarrera->sum('total_alumnos'),
+                );
+            })->sortBy('nombre')->values();
+
+        $reportesFacultad = $anios
+            ->filter(fn (AnioAcademico $anio): bool => $anio->carrera?->facultad !== null)
+            ->groupBy(fn (AnioAcademico $anio): int => $anio->carrera->facultad_id)
+            ->map(function (Collection $aniosFacultad) use ($crearFila): array {
+                $facultad = $aniosFacultad->first()->carrera->facultad;
+
+                return $crearFila(
+                    $facultad->nombre,
+                    (int) $aniosFacultad->sum('total_ayudantes'),
+                    (int) $aniosFacultad->sum('total_alumnos'),
+                );
+            })->sortBy('nombre')->values();
+
+        return [$reportesCarrera, $reportesFacultad, $reportesAnio];
     }
 }

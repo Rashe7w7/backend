@@ -2,16 +2,10 @@
 
 namespace App\Providers;
 
-use App\Models\AnioAcademico;
-use App\Models\Carrera;
-use App\Models\Departamento;
-use App\Models\Facultad;
-use App\Models\Grupo;
-use App\Services\AuditService;
-use Illuminate\Auth\Events\Login;
-use Illuminate\Auth\Events\Logout;
+use App\Models\Indicador;
+use App\Models\User;
+use Illuminate\Auth\Access\Response;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
@@ -32,23 +26,20 @@ class AppServiceProvider extends ServiceProvider
     {
         Model::preventLazyLoading(! app()->isProduction());
 
-        Gate::define('manage-users', fn ($user) => $user->isAdministrator());
-        Gate::define('write-academic-data', fn ($user) => $user->canWriteAcademicData());
-        Gate::define('create-indicators', fn ($user) => collect([
-            'administrador', 'ppa', 'jefe_departamento', 'rector', 'vicerrector', 'decano',
-        ])->contains(fn (string $role) => $user->hasRole($role)));
-        Gate::define('manage-indicator-definitions', fn ($user) => $user->isAdministrator());
-        Gate::define('view-audit', fn ($user) => $user->isAdministrator());
+        Gate::define('manage-users', fn (User $user): bool => $user->isAdministrator());
+        Gate::define('write-academic-data', fn (User $user): bool => $user->canWriteAcademicData());
+        Gate::define('manage-indicator', function (User $user, Indicador|string|null $indicator = null): Response {
+            $specification = $indicator instanceof Indicador ? $indicator->especificacion : $indicator;
 
-        Event::listen(Login::class, fn (Login $event) => app(AuditService::class)
-            ->record('sesion.iniciada', 'users', $event->user->getAuthIdentifier()));
-        Event::listen(Logout::class, fn (Logout $event) => app(AuditService::class)
-            ->record('sesion.cerrada', 'users', $event->user?->getAuthIdentifier()));
-
-        foreach ([Facultad::class, Departamento::class, Carrera::class, AnioAcademico::class, Grupo::class] as $academicModel) {
-            $academicModel::created(fn (Model $model) => app(AuditService::class)->recordModel('estructura.creada', $model));
-            $academicModel::updated(fn (Model $model) => app(AuditService::class)->recordModel('estructura.actualizada', $model, $model->getOriginal()));
-            $academicModel::deleted(fn (Model $model) => app(AuditService::class)->recordModel('estructura.eliminada', $model, $model->getOriginal()));
-        }
+            return $user->canManageIndicatorSpecification($specification)
+                ? Response::allow()
+                : Response::deny('No tienes permisos para realizar esta operación con este tipo de indicador');
+        });
+        Gate::define('view-student-helpers', fn (User $user): bool => $user->canViewStudentHelpers());
+        Gate::define('manage-student-helpers', fn (User $user): bool => $user->canManageStudentHelpers());
+        Gate::define('delete-student-helpers', fn (User $user): bool => $user->canDeleteStudentHelpers());
+        Gate::define('export-indicator-documents', fn (User $user): Response => $user->canManageAnyIndicator()
+            ? Response::allow()
+            : Response::deny('No tienes permisos para realizar esta operación con este tipo de indicador'));
     }
 }

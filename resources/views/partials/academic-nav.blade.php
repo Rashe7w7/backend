@@ -4,9 +4,8 @@
         <div class="academic-links">
             <a href="{{ route('dashboard') }}" @if(request()->routeIs('dashboard')) aria-current="page" @endif>Inicio</a>
             <a href="{{ route('indicadores') }}" @if(request()->routeIs('indicadores*')) aria-current="page" @endif>Indicadores</a>
-            @if(auth()->user()->isAdministrator() || auth()->user()->hasRole('ppa'))<a href="{{ route('ppa.index') }}" @if(request()->routeIs('ppa.*')) aria-current="page" @endif>PPA</a><a href="{{ route('alumnoayudante') }}" @if(request()->routeIs('alumnoayudante')) aria-current="page" @endif>Alumnos Ayudantes</a>@endif
-            @can('manage-users')<a href="{{ route('roles') }}" @if(request()->routeIs('roles*')) aria-current="page" @endif>Usuarios y roles</a>@endcan
-            @can('view-audit')<a href="{{ route('audit.index') }}" @if(request()->routeIs('audit.*')) aria-current="page" @endif>Auditoría</a>@endcan
+            <a href="{{ route('planestudio') }}" @if(request()->routeIs('planestudio')) aria-current="page" @endif>Plan de estudio</a>
+            <a href="{{ route('alumnoayudante') }}" @if(request()->routeIs('alumnoayudante*')) aria-current="page" @endif>Alumnos ayudantes</a>
         </div>
         <form method="POST" action="{{ route('logout') }}">@csrf<button class="academic-logout" type="submit">Salir <span aria-hidden="true">↗</span></button></form>
     </div>

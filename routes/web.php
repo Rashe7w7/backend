@@ -28,13 +28,16 @@ Route::middleware('auth')->group(function () {
     Route::view('/profesor', 'tables.profesor')->name('profesor');
     Route::view('/planestudio', 'tables.planestudio')->name('planestudio');
 
-    Route::get('/alumnoayudante', [AlumnoAyudanteController::class, 'index'])->name('alumnoayudante');
+    Route::get('/alumnoayudante', [AlumnoAyudanteController::class, 'index'])
+        ->middleware('can:view-student-helpers')->name('alumnoayudante');
 
     Route::get('/indicadores', [IndicadorController::class, 'index'])->name('indicadores');
-    Route::post('/valores', [IndicadorController::class, 'storeValores'])->middleware('can:manage-users')->name('valores.store');
+    Route::post('/valores', [IndicadorController::class, 'storeValores'])->name('valores.store');
     Route::get('/indicadores/bajas', [BajasController::class, 'index'])->name('indicadores.bajas');
-    Route::get('/informes/indicadores/excel', [ReportExportController::class, 'excel'])->name('reports.indicadores.excel');
-    Route::get('/informes/indicadores/pdf', [ReportExportController::class, 'pdf'])->name('reports.indicadores.pdf');
+    Route::get('/informes/indicadores/excel', [ReportExportController::class, 'excel'])
+        ->middleware('can:export-indicator-documents')->name('reports.indicadores.excel');
+    Route::get('/informes/indicadores/pdf', [ReportExportController::class, 'pdf'])
+        ->middleware('can:export-indicator-documents')->name('reports.indicadores.pdf');
 
     Route::middleware(['can:manage-users'])->group(function () {
         Route::get('/importar', [ImportController::class, 'index'])->name('imports.index');

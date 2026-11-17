@@ -11,16 +11,10 @@ class CursoAcademicoSeeder extends Seeder
     {
         $cursos = [
             [
-                'nombre' => '2023-2024',
-                'fecha_inicio' => '2023-09-01',
-                'fecha_fin' => '2024-06-30',
-                'activo' => false,
-            ],
-            [
                 'nombre' => '2024-2025',
                 'fecha_inicio' => '2024-09-01',
                 'fecha_fin' => '2025-06-30',
-                'activo' => true,
+                'activo' => false,
             ],
             [
                 'nombre' => '2025-2026',
@@ -28,10 +22,16 @@ class CursoAcademicoSeeder extends Seeder
                 'fecha_fin' => '2026-06-30',
                 'activo' => false,
             ],
+            [
+                'nombre' => '2026-2027',
+                'fecha_inicio' => '2026-09-01',
+                'fecha_fin' => '2027-06-30',
+                'activo' => true,
+            ],
         ];
 
         foreach ($cursos as $curso) {
-            CursoAcademico::firstOrCreate(
+            CursoAcademico::query()->updateOrCreate(
                 ['nombre' => $curso['nombre']],
                 $curso
             );

@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\EspecificacionIndicador;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -14,7 +15,12 @@ class StoreIndicadorRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user()?->can('write-academic-data') ?? false;
+        return $this->user()?->can('manage-indicator', $this->string('especificacion')->toString()) ?? false;
+    }
+
+    protected function failedAuthorization(): never
+    {
+        throw new AuthorizationException('No tienes permisos para realizar esta operación con este tipo de indicador');
     }
 
     /**

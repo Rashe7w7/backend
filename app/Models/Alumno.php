@@ -22,7 +22,7 @@ class Alumno extends Model
         return $this->belongsTo(Grupo::class, 'grupo_id');
     }
 
-    public function bajas()
+    public function bajas(): HasMany
     {
         return $this->hasMany(BajaEstudiante::class, 'alumno_id');
     }

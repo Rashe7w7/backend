@@ -11,6 +11,7 @@ use App\Models\Disciplina;
 use App\Models\Grupo;
 use App\Models\PlanEstudio;
 use App\Models\Profesor;
+use App\Models\ProfesorAsignatura;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -75,8 +76,14 @@ class EnsureDepartmentScope
         }
 
         if ($uri === 'api/alumnoayudante' && $request->isMethod('post')) {
+            $profesorAsignatura = ProfesorAsignatura::find($request->integer('profesor_asignatura_id'));
+
+            if (! $profesorAsignatura) {
+                return collect();
+            }
+
             return $this->commonDepartments(
-                $this->forProfessor($request->integer('profesor_id')),
+                $this->forProfessor((int) $profesorAsignatura->profesor_id),
                 $this->forStudent($request->integer('alumno_id')),
             );
         }
