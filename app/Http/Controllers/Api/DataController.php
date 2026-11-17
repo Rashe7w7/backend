@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ListAlumnosRequest;
 use App\Http\Requests\StoreIndicadorRequest;
+use App\Http\Requests\UpdateIndicadorRequest;
 use App\Models\Alumno;
 use App\Models\AnioAcademico;
 use App\Models\Asignatura;
@@ -20,6 +21,7 @@ use App\Models\Indicador;
 use App\Models\PlanEstudio;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 
 class DataController extends Controller
 {
@@ -351,11 +353,14 @@ class DataController extends Controller
     }
 
     // Indicadores
-    public function getIndicadores()
+    public function getIndicadores(Request $request): JsonResponse
     {
+        $allowedSpecifications = $request->user()->allowedIndicatorSpecifications();
+
         return response()->json(
             Indicador::query()
                 ->with('categoria:id,nombre')
+                ->whereIn('especificacion', $allowedSpecifications)
                 ->orderBy('nombre')
                 ->get()
         );
@@ -368,13 +373,21 @@ class DataController extends Controller
         return response()->json($indicador->load('categoria:id,nombre'), 201);
     }
 
-    public function destroyIndicador($id)
+    public function updateIndicador(UpdateIndicadorRequest $request, Indicador $indicador): JsonResponse
     {
-        // Eliminar el indicador padre; relaciones hijas se eliminarán por cascada si están configuradas
-        $indicador = Indicador::find($id);
-        if (! $indicador) {
-            return response()->json(['error' => 'Indicador no encontrado'], 404);
+        $indicador->update($request->validated());
+
+        return response()->json($indicador->load('categoria:id,nombre'));
+    }
+
+    public function destroyIndicador(Request $request, int $id): JsonResponse
+    {
+        if (! $request->user()->canManageAnyIndicator()) {
+            Gate::authorize('manage-indicator', null);
         }
+
+        $indicador = Indicador::query()->findOrFail($id);
+        Gate::authorize('manage-indicator', $indicador);
 
         $indicador->delete();
 

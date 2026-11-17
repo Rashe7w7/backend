@@ -30,7 +30,7 @@ beforeEach(function () {
     ]);
 });
 
-test('a department chief cannot spoof ownership to delete a global indicator', function () {
+test('a department chief can delete a department indicator', function () {
     JefeDepartamento::create([
         'profesor_id' => $this->professor->id,
         'departamento_id' => $this->department->id,
@@ -45,24 +45,36 @@ test('a department chief cannot spoof ownership to delete a global indicator', f
 
     $this->actingAs($this->chief)
         ->deleteJson('/api/indicadores/'.$indicator->id, ['departamento_id' => $this->department->id])
-        ->assertForbidden();
+        ->assertOk();
 
-    $this->assertDatabaseHas('indicador', ['id' => $indicator->id]);
+    $this->assertDatabaseMissing('indicador', ['id' => $indicator->id]);
 });
 
-test('a department chief cannot write values through an unscoped web action', function () {
+test('a department chief can write values for department indicators', function () {
     JefeDepartamento::create([
         'profesor_id' => $this->professor->id,
         'departamento_id' => $this->department->id,
         'fecha_inicio' => now()->subDay(),
     ]);
 
+    $category = CategoriaIndicador::create(['nombre' => 'Calidad']);
+    $indicator = Indicador::create([
+        'nombre' => 'Indicador departamental',
+        'categoria_indicador_id' => $category->id,
+        'especificacion' => 'departamento',
+    ]);
+
     $this->actingAs($this->chief)
-        ->post(route('valores.store'), ['valores' => [1 => 10]])
-        ->assertForbidden();
+        ->post(route('valores.store'), ['valores' => [$indicator->id => 10]])
+        ->assertRedirect(route('indicadores'));
+
+    $this->assertDatabaseHas('indicador_valor', [
+        'indicador_id' => $indicator->id,
+        'valor' => 10,
+    ]);
 });
 
-test('a future department appointment does not grant write access', function () {
+test('indicator permissions depend on the role and not on appointment dates', function () {
     JefeDepartamento::create([
         'profesor_id' => $this->professor->id,
         'departamento_id' => $this->department->id,
@@ -75,7 +87,7 @@ test('a future department appointment does not grant write access', function () 
             'nombre' => 'Indicador anticipado',
             'categoria_indicador_id' => $category->id,
             'especificacion' => 'departamento',
-        ])->assertForbidden();
+        ])->assertCreated();
 
-    $this->assertDatabaseMissing('indicador', ['nombre' => 'Indicador anticipado']);
+    $this->assertDatabaseHas('indicador', ['nombre' => 'Indicador anticipado']);
 });

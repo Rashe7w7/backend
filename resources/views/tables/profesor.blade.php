@@ -44,8 +44,7 @@
     <aside class="sidebar">
         <h2>Sistema PPA</h2>
         <nav>
-            <a href="{{ route('roles') }}">📁 Gestión de roles</a>
-            <a href="{{ route('alumnoayudante') }}">📁 Alumno Ayudante</a>
+            <a href="{{ route('alumnoayudante') }}">📁 Alumnos ayudantes</a>
             <a class="active" href="{{ route('profesor') }}">📁 Profesor</a>
         </nav>
     </aside>

@@ -1,362 +1,212 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Sistema PPA - Alumnos Ayudantes</title>
+    <title>Alumnos ayudantes | Agenda Semestral</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="academic-ui bg-white min-h-screen flex">
+<body class="academic-ui min-h-screen">
+    @include('partials.academic-nav')
 
-    <!-- ==================== SIDEBAR ==================== -->
-    <aside class="w-60 bg-gray-100 p-6 min-h-screen border-r border-gray-300">
-        <h2 class="text-2xl font-bold text-orange-500 mb-8">Sistema PPA</h2>
-        <nav class="space-y-2">
-            <a href="{{ route('roles') }}" class="block px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-200 hover:text-orange-500 transition-colors">
-                Gestión de Roles
-            </a>
-            <a href="{{ route('alumnoayudante') }}" class="block px-4 py-3 rounded-lg bg-orange-500 text-white font-semibold transition-colors">
-                Alumno Ayudante
-            </a>
-            <a href="{{ route('profesor') }}" class="block px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-200 hover:text-orange-500 transition-colors">
-                Profesor
-            </a>
-        </nav>
-    </aside>
+    <main class="mx-auto max-w-7xl space-y-8 px-6">
+        <header>
+            <p class="eyebrow">Sistema PPA</p>
+            <h1 class="text-3xl font-semibold">Alumnos ayudantes</h1>
+            <p class="mt-2 max-w-3xl text-sm text-gray-500">Consulta las designaciones y registra al estudiante en la asignatura específica que apoya.</p>
+        </header>
 
-    <!-- ==================== CONTENIDO PRINCIPAL ==================== -->
-    <main class="flex-1 p-8">
+        @if (session('success'))
+            <div class="rounded-xl border border-green-200 bg-green-50 p-4 text-sm text-green-800" role="status">{{ session('success') }}</div>
+        @endif
 
-        <!-- Titulo -->
-        <h1 class="text-3xl font-bold text-orange-500">Alumnos Ayudantes</h1>
-        <p class="text-orange-400 mb-6">Gestion del sistema</p>
+        @if ($errors->any())
+            <div class="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800" role="alert">
+                <p class="font-semibold">No se pudo registrar la designación.</p>
+                <ul class="mt-2 list-disc space-y-1 pl-5">
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
 
-        <!-- Boton Designar -->
-        <button id="btnDesignar" onclick="abrirFormulario()" class="px-5 py-2 bg-green-500 text-white font-semibold rounded-lg hover:bg-green-600">
-            + Designar Nuevo
-        </button>
+        @can('manage-student-helpers')
+            <section class="bg-white">
+                <div class="mb-6">
+                    <h2 class="text-xl font-semibold">Nueva designación</h2>
+                    <p class="mt-1 text-sm text-gray-500">El curso académico se toma de la asignación docente seleccionada.</p>
+                </div>
 
-        <!-- ==================== FORMULARIO DESIGNAR ==================== -->
-        <div id="formulario" class="hidden mt-6 p-6 border-2 border-orange-300 rounded-xl bg-orange-50">
-            <h2 class="text-xl font-bold text-orange-500 mb-4">Designar Alumno Ayudante</h2>
+                <form method="POST" action="{{ route('alumnoayudante.store') }}" class="grid gap-5 lg:grid-cols-[1fr_1.4fr_auto] lg:items-end">
+                    @csrf
+                    <div class="grid gap-2">
+                        <label for="alumno_busqueda">Estudiante</label>
+                        <input
+                            id="alumno_busqueda"
+                            class="px-4"
+                            type="text"
+                            list="alumnos_disponibles"
+                            placeholder="Escriba un nombre, correo o carrera"
+                            autocomplete="off"
+                            role="combobox"
+                            aria-controls="alumnos_disponibles"
+                            required
+                        >
+                        <input id="alumno_id" name="alumno_id" type="hidden" value="{{ old('alumno_id') }}">
+                        <datalist id="alumnos_disponibles">
+                            @foreach ($alumnos as $alumno)
+                                <option value="{{ $alumno->nombre }} · {{ $alumno->email ?: 'Sin correo' }} · {{ $alumno->grupo?->anioAcademico?->carrera?->nombre ?? 'Sin carrera' }}"></option>
+                            @endforeach
+                        </datalist>
+                    </div>
 
-            <div class="grid grid-cols-1 gap-4 max-w-lg">
-                <!-- Alumno Existente -->
+                    <div class="grid gap-2">
+                        <label for="profesor_asignatura_id">Asignatura de la designación</label>
+                        <select id="profesor_asignatura_id" class="px-4" name="profesor_asignatura_id" required>
+                            <option value="">Seleccione una asignatura</option>
+                            @foreach ($profesorAsignaturas as $profesorAsignatura)
+                                <option value="{{ $profesorAsignatura->id }}" @selected((int) old('profesor_asignatura_id') === $profesorAsignatura->id)>
+                                    {{ $profesorAsignatura->asignatura->nombre }} · {{ $profesorAsignatura->profesor->nombre }} · {{ $profesorAsignatura->cursoAcademico->nombre }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <button type="submit" class="bg-orange-500 px-5 py-3 font-semibold text-white">Registrar designación</button>
+                </form>
+            </section>
+        @endcan
+
+        <section class="overflow-hidden bg-white p-0!">
+            <div class="flex flex-wrap items-end justify-between gap-4 border-b p-6">
                 <div>
-                    <label class="block text-orange-600 font-medium mb-1">Alumno *</label>
-                    <select id="alumno_id" class="w-full px-3 py-2 border-2 border-orange-300 rounded-lg focus:outline-none focus:border-orange-500">
-                        <option value="">Seleccione un alumno</option>
-                        @foreach($alumnos as $alumno)
-                            <option value="{{ $alumno->id }}">{{ $alumno->nombre }} ({{ $alumno->email }})</option>
-                        @endforeach
-                    </select>
+                    <h2 class="text-xl font-semibold">Designaciones registradas</h2>
+                    <p class="mt-1 text-sm text-gray-500">{{ $alumnosAyudantes->total() }} registros en total.</p>
                 </div>
             </div>
 
-            <!-- Botones Formulario -->
-            <div class="mt-6 flex gap-3">
-                <button onclick="cerrarFormulario()" class="px-5 py-2 bg-red-500 text-white font-semibold rounded-lg hover:bg-red-600">
-                    Cancelar
-                </button>
-                <button onclick="continuar()" class="px-5 py-2 bg-green-500 text-white font-semibold rounded-lg hover:bg-green-600">
-                    Continuar
-                </button>
+            <div class="overflow-x-auto">
+                <table>
+                    <thead>
+                        <tr>
+                            <th class="text-left">Estudiante</th>
+                            <th class="text-left">Carrera y año</th>
+                            <th class="text-left">Asignatura</th>
+                            <th class="text-left">Profesor</th>
+                            <th class="text-left">Curso</th>
+                            @can('delete-student-helpers')
+                                <th class="text-right">Acciones</th>
+                            @endcan
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse ($alumnosAyudantes as $designacion)
+                            <tr>
+                                <td>
+                                    <strong>{{ $designacion->alumno->nombre }}</strong>
+                                    <div class="text-xs text-gray-500">{{ $designacion->alumno->email ?: 'Sin correo' }}</div>
+                                </td>
+                                <td>
+                                    {{ $designacion->alumno->grupo?->anioAcademico?->carrera?->nombre ?? 'Sin carrera' }}
+                                    <div class="text-xs text-gray-500">{{ $designacion->alumno->grupo?->anioAcademico?->nombre ?? 'Sin año académico' }}</div>
+                                </td>
+                                <td>
+                                    {{ $designacion->profesorAsignatura->asignatura->nombre }}
+                                    @if ($designacion->profesorAsignatura->asignatura->codigo)
+                                        <div class="text-xs text-gray-500">{{ $designacion->profesorAsignatura->asignatura->codigo }}</div>
+                                    @endif
+                                </td>
+                                <td>{{ $designacion->profesorAsignatura->profesor->nombre }}</td>
+                                <td>{{ $designacion->cursoAcademico->nombre }}</td>
+                                @can('delete-student-helpers')
+                                    <td class="text-right">
+                                        <form method="POST" action="{{ route('alumnoayudante.destroy', $designacion->id) }}" onsubmit="return confirm('¿Eliminar esta designación de alumno ayudante?')">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="rounded-lg border border-red-200 px-3 py-2 text-sm font-semibold text-red-700 hover:bg-red-50">Eliminar</button>
+                                        </form>
+                                    </td>
+                                @endcan
+                            </tr>
+                        @empty
+                            <tr><td colspan="6" class="text-center text-gray-500">No hay alumnos ayudantes registrados.</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
             </div>
-        </div>
 
-        <!-- ==================== TABLA DE ASIGNADOS ==================== -->
-        <h2 class="text-xl font-bold text-orange-500 mt-8 mb-4">Lista de Asignados</h2>
+            @if ($alumnosAyudantes->hasPages())
+                <div class="border-t p-6">{{ $alumnosAyudantes->links() }}</div>
+            @endif
+        </section>
 
-        <div class="border-2 border-orange-300 rounded-xl overflow-hidden">
-            <table class="w-full">
-                <thead class="bg-orange-500 text-white">
-                    <tr>
-                        <th class="px-4 py-3 text-left">Estudiante</th>
-                        <th class="px-4 py-3 text-left">Ano</th>
-                        <th class="px-4 py-3 text-left">Grupo</th>
-                        <th class="px-4 py-3 text-left">Asignatura</th>
-                        <th class="px-4 py-3 text-left">Profesor</th>
-                        <th class="px-4 py-3 text-left">Accion</th>
-                    </tr>
-                </thead>
-                <tbody id="tablaAsignados">
-                    @foreach($alumnosAyudantes as $aa)
-                    <tr class="border-t border-orange-200 hover:bg-orange-50" data-id="{{ $aa->id }}">
-                        <td class="px-4 py-3">
-                            <div class="font-medium text-gray-800">{{ $aa->alumno->nombre }}</div>
-                            <div class="text-sm text-gray-500">{{ $aa->alumno->email }}</div>
-                        </td>
-                        <td class="px-4 py-3 text-gray-700">{{ $aa->cursoAcademico->nombre ?? 'N/A' }}</td>
-                        <td class="px-4 py-3 text-gray-700">-</td>
-                        <td class="px-4 py-3 text-gray-700">{{ $aa->profesorAsignatura->asignatura->nombre ?? 'N/A' }}</td>
-                        <td class="px-4 py-3 text-gray-700">{{ $aa->profesorAsignatura->profesor->nombre ?? 'N/A' }}</td>
-                        <td class="px-4 py-3">
-                            <button onclick="eliminarFila(this)" class="text-red-500 hover:text-red-700 font-medium">
-                                Eliminar
-                            </button>
-                        </td>
-                    </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
+        <section class="space-y-6 bg-white">
+            <div>
+                <p class="eyebrow">Reportes</p>
+                <h2 class="text-xl font-semibold">Distribución de alumnos ayudantes</h2>
+                <p class="mt-1 text-sm text-gray-500">El porcentaje compara estudiantes ayudantes únicos con el total de estudiantes de cada ámbito académico.</p>
+            </div>
 
+            <div class="grid gap-6 xl:grid-cols-3">
+                @foreach ([
+                    'Carrera' => $reportesCarrera,
+                    'Facultad' => $reportesFacultad,
+                    'Año académico' => $reportesAnio,
+                ] as $titulo => $reporte)
+                    <div class="overflow-hidden rounded-xl border border-gray-200">
+                        <h3 class="border-b bg-gray-50 px-4 py-3 font-semibold">Por {{ Str::lower($titulo) }}</h3>
+                        <div class="max-h-96 overflow-auto">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th class="text-left">{{ $titulo }}</th>
+                                        <th class="text-right">Total</th>
+                                        <th class="text-right">%</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @forelse ($reporte as $fila)
+                                        <tr>
+                                            <td>{{ $fila['nombre'] }}</td>
+                                            <td class="text-right font-semibold">{{ $fila['total'] }}</td>
+                                            <td class="text-right">{{ number_format($fila['porcentaje'], 2, ',', '.') }}%</td>
+                                        </tr>
+                                    @empty
+                                        <tr><td colspan="3" class="text-center text-gray-500">Sin datos académicos.</td></tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        </section>
     </main>
 
-    <!-- ==================== MODAL CONFIRMAR DESIGNACION ==================== -->
-    <div id="modalDesignar" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-        <div class="bg-white p-6 rounded-xl w-96 border-2 border-orange-500 shadow-xl">
-            <h3 class="text-xl font-bold text-orange-500 mb-2">Confirmar Designacion</h3>
-            <p id="nombreEstudiante" class="text-gray-700 mb-4 font-medium"></p>
+    @can('manage-student-helpers')
+        <script>
+            const studentSearch = document.getElementById('alumno_busqueda');
+            const studentId = document.getElementById('alumno_id');
+            const studentOptions = @js($alumnos->mapWithKeys(fn ($alumno) => [
+                $alumno->nombre.' · '.($alumno->email ?: 'Sin correo').' · '.($alumno->grupo?->anioAcademico?->carrera?->nombre ?? 'Sin carrera') => $alumno->id,
+            ]));
+            const selectedStudent = Object.entries(studentOptions).find(([, id]) => Number(id) === Number(studentId.value));
 
-            <div class="space-y-4">
-                <!-- Ano Academico -->
-                <div>
-                    <label class="block text-orange-600 font-medium mb-1">Ano Academico</label>
-                    <select id="anno" class="w-full px-3 py-2 border-2 border-orange-300 rounded-lg">
-                        @foreach($cursosAcademicos as $curso)
-                            <option value="{{ $curso->id }}">{{ $curso->nombre }}</option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <!-- Asignatura -->
-                <div>
-                    <label class="block text-orange-600 font-medium mb-1">Asignatura</label>
-                    <select id="asignatura" class="w-full px-3 py-2 border-2 border-orange-300 rounded-lg">
-                        @foreach($asignaturas as $asignatura)
-                            <option value="{{ $asignatura->id }}">{{ $asignatura->nombre }}</option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <!-- Profesor -->
-                <div>
-                    <label class="block text-orange-600 font-medium mb-1">Profesor</label>
-                    <select id="profesor" class="w-full px-3 py-2 border-2 border-orange-300 rounded-lg">
-                        @foreach($profesores as $profesor)
-                            <option value="{{ $profesor->id }}">{{ $profesor->nombre }}</option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <!-- Grupo -->
-                <div>
-                    <label class="block text-orange-600 font-medium mb-1">Grupo</label>
-                    <select id="grupo" class="w-full px-3 py-2 border-2 border-orange-300 rounded-lg">
-                        <option value="">Seleccione un grupo</option>
-                        @foreach($grupos as $grupo)
-                            <option value="{{ $grupo->id }}">{{ $grupo->nombre }}</option>
-                        @endforeach
-                    </select>
-                </div>
-            </div>
-
-            <!-- Botones Modal -->
-            <div class="mt-6 flex gap-3 justify-end">
-                <button onclick="cerrarModal()" class="px-5 py-2 bg-red-500 text-white font-semibold rounded-lg hover:bg-red-600">
-                    Cancelar
-                </button>
-                <button onclick="confirmarDesignacion()" class="px-5 py-2 bg-green-500 text-white font-semibold rounded-lg hover:bg-green-600">
-                    Confirmar
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- ==================== MODAL ELIMINAR ==================== -->
-    <div id="modalEliminar" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-        <div class="bg-white p-6 rounded-xl w-80 border-2 border-orange-500 shadow-xl">
-            <h3 class="text-xl font-bold text-orange-500 mb-4">Confirmar</h3>
-            <p class="text-gray-700 mb-6">¿Desea eliminar esta asignacion?</p>
-            <div class="flex gap-3 justify-end">
-                <button onclick="cerrarModalEliminar()" class="px-5 py-2 bg-gray-500 text-white font-semibold rounded-lg hover:bg-gray-600">
-                    No
-                </button>
-                <button onclick="confirmarEliminar()" class="px-5 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700">
-                    Si, Eliminar
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- ==================== JAVASCRIPT ==================== -->
-    <script>
-        // Variables globales
-        var estudianteTemp = null;
-        var filaAEliminar = null;
-
-        // ===== FORMULARIO =====
-        function abrirFormulario() {
-            document.getElementById('formulario').classList.remove('hidden');
-            document.getElementById('btnDesignar').classList.add('hidden');
-        }
-
-        function cerrarFormulario() {
-    document.getElementById('formulario').classList.add('hidden');
-    document.getElementById('btnDesignar').classList.remove('hidden');
-    // limpia el select de alumnos al cerrar
-    const alumnoSelect = document.getElementById('alumno_id');
-    if (alumnoSelect) {
-        alumnoSelect.value = '';
-    }
-   
-    estudianteTemp = null;
-}
-        function limpiarCampos() {
-    
-  
-    const alumnoSelect = document.getElementById('alumno_id');
-    if (alumnoSelect) {
-        alumnoSelect.value = '';
-    }
-}
-
-       
-        function continuar() {
-            var alumno_id = document.getElementById('alumno_id').value;
-
-            // Validar campos obligatorios
-            if (!alumno_id) {
-                alert('Seleccione un alumno');
-                return;
+            if (selectedStudent) {
+                studentSearch.value = selectedStudent[0];
             }
 
-            // Obtener nombre del alumno seleccionado
-            var alumnoOption = document.querySelector('#alumno_id option[value="' + alumno_id + '"]');
-            var alumnoNombre = alumnoOption.text.split(' (')[0];
+            const syncSelectedStudent = () => {
+                const selectedId = studentOptions[studentSearch.value] ?? '';
 
-            // Guardar datos temporales
-            estudianteTemp = {
-                alumno_id: alumno_id,
-                nombre: alumnoNombre
+                studentId.value = selectedId;
+                studentSearch.setCustomValidity(selectedId ? '' : 'Seleccione un estudiante de la lista.');
             };
 
-            // Mostrar nombre en modal
-            document.getElementById('nombreEstudiante').textContent = alumnoNombre;
-
-            // Abrir modal
-            document.getElementById('modalDesignar').classList.remove('hidden');
-        }
-
-        // ===== MODAL DESIGNAR =====
-        function cerrarModal() {
-            document.getElementById('modalDesignar').classList.add('hidden');
-        }
-
-        async function confirmarDesignacion() {
-            if (!estudianteTemp) return;
-
-            var cursoAcademicoId = document.getElementById('anno').value;
-            var asignaturaId = document.getElementById('asignatura').value;
-            var profesorId = document.getElementById('profesor').value;
-            var grupoId = document.getElementById('grupo').value;
-
-            try {
-                const response = await fetch('/api/alumnoayudante', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                    },
-                    body: JSON.stringify({
-                        alumno_id: parseInt(estudianteTemp.alumno_id),
-                        asignatura_id: parseInt(asignaturaId),
-                        profesor_id: parseInt(profesorId),
-                        grupo_id: grupoId ? parseInt(grupoId) : null,
-                        curso_academico_id: parseInt(cursoAcademicoId)
-                    })
-                });
-
-                const data = await response.json();
-
-                if (!response.ok) {
-                    alert('❌ Error: ' + (data.error || 'Error al guardar la designación'));
-                    return;
-                }
-
-                // Obtener nombres para mostrar
-                var annoText = document.querySelector('#anno option[value="' + cursoAcademicoId + '"]').text;
-                var asignaturaText = document.querySelector('#asignatura option[value="' + asignaturaId + '"]').text;
-                var profesorText = document.querySelector('#profesor option[value="' + profesorId + '"]').text;
-                var grupoText = grupoId ? document.querySelector('#grupo option[value="' + grupoId + '"]').text : '-';
-
-                // Crear nueva fila
-                var fila = document.createElement('tr');
-                fila.className = 'border-t border-orange-200 hover:bg-orange-50';
-                fila.dataset.id = data.id;
-                fila.innerHTML = 
-                    '<td class="px-4 py-3">' +
-                        '<div class="font-medium text-gray-800">' + estudianteTemp.nombre + '</div>' +
-                    '</td>' +
-                    '<td class="px-4 py-3 text-gray-700">' + annoText + '</td>' +
-                    '<td class="px-4 py-3 text-gray-700">' + grupoText + '</td>' +
-                    '<td class="px-4 py-3 text-gray-700">' + asignaturaText + '</td>' +
-                    '<td class="px-4 py-3 text-gray-700">' + profesorText + '</td>' +
-                    '<td class="px-4 py-3">' +
-                        '<button onclick="eliminarFila(this)" class="text-red-500 hover:text-red-700 font-medium">Eliminar</button>' +
-                    '</td>';
-
-                // Agregar a tabla
-                document.getElementById('tablaAsignados').appendChild(fila);
-
-                // Cerrar todo
-                cerrarModal();
-                cerrarFormulario();
-            } catch (error) {
-                alert('❌ Error al guardar la designación: ' + error.message);
-            }
-        }
-
-        // ===== ELIMINAR =====
-        function eliminarFila(btn) {
-            filaAEliminar = btn.parentElement.parentElement;
-            document.getElementById('modalEliminar').classList.remove('hidden');
-        }
-
-        function cerrarModalEliminar() {
-            document.getElementById('modalEliminar').classList.add('hidden');
-            filaAEliminar = null;
-        }
-
-       async function confirmarEliminar() {
-    if (!filaAEliminar) return;
-
-    const alumnoayudanteId = filaAEliminar.dataset.id;
-
-    if (!alumnoayudanteId) {
-        alert('❌ Error: No se pudo identificar el registro');
-        cerrarModalEliminar();
-        return;
-    }
-
-    try {
-        const response = await fetch('/api/alumnoayudante/' + alumnoayudanteId, {
-            method: 'DELETE',
-            headers: {
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                'Accept': 'application/json'
-            }
-        });
-
-        const data = await response.json();
-
-        if (response.ok) {
-            // ✅ Eliminar la fila visualmente
-            filaAEliminar.remove();
-            alert('✅ Alumno ayudante eliminado correctamente');
-        } else {
-            alert('❌ Error al eliminar: ' + (data.error || 'Error desconocido'));
-        }
-    } catch (error) {
-        alert('❌ Error al eliminar: ' + error.message);
-    }
-
-    cerrarModalEliminar();
-}
-    </script>
-
+            studentSearch.addEventListener('input', syncSelectedStudent);
+            studentSearch.form.addEventListener('submit', syncSelectedStudent);
+        </script>
+    @endcan
 </body>
 </html>

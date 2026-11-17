@@ -31,11 +31,15 @@ Route::middleware(['web', 'auth', 'throttle:60,1'])->group(function () {
     Route::get('/categorias-indicador', [DataController::class, 'getCategoriasIndicador']);
     Route::post('/categorias-indicador', [DataController::class, 'storeCategoriaIndicador'])->middleware(['can:write-academic-data', 'department.scope']);
     Route::get('/indicadores', [DataController::class, 'getIndicadores']);
-    Route::post('/indicadores', [DataController::class, 'storeIndicador'])->middleware('can:manage-users');
-    Route::delete('/indicadores/{id}', [DataController::class, 'destroyIndicador'])->middleware(['can:write-academic-data', 'department.scope']);
+    Route::post('/indicadores', [DataController::class, 'storeIndicador']);
+    Route::put('/indicadores/{indicador}', [DataController::class, 'updateIndicador']);
+    Route::patch('/indicadores/{indicador}', [DataController::class, 'updateIndicador']);
+    Route::delete('/indicadores/{id}', [DataController::class, 'destroyIndicador']);
 
-    Route::post('/alumnoayudante', [AlumnoAyudanteController::class, 'storeFromForm'])->middleware(['can:write-academic-data', 'department.scope']);
-    Route::delete('/alumnoayudante/{id}', [AlumnoAyudanteController::class, 'destroy'])->middleware(['can:write-academic-data', 'department.scope']);
-    Route::get('/profesores-by-asignatura/{asignaturaId}', [AlumnoAyudanteController::class, 'getProfesoresByAsignatura']);
-    Route::get('/asignaturas-by-profesor/{profesorId}', [AlumnoAyudanteController::class, 'getAsignaturasByProfesor']);
+    Route::post('/alumnoayudante', [AlumnoAyudanteController::class, 'store'])->name('alumnoayudante.store');
+    Route::delete('/alumnoayudante/{id}', [AlumnoAyudanteController::class, 'destroy'])->name('alumnoayudante.destroy');
+    Route::middleware('can:view-student-helpers')->group(function () {
+        Route::get('/profesores-by-asignatura/{asignaturaId}', [AlumnoAyudanteController::class, 'getProfesoresByAsignatura']);
+        Route::get('/asignaturas-by-profesor/{profesorId}', [AlumnoAyudanteController::class, 'getAsignaturasByProfesor']);
+    });
 });
